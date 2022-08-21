@@ -1,0 +1,13 @@
+# Custom data for safety helmet
+
+
+# train and val data as 1) directory: path/images/, 2) file: path/images.txt, or 3) list: [path1/images/, path2/images/]
+train: P:/Item/Yolov5/yolov5-mask-42-master/data/cocoons/images/train
+
+val: P:/Item/Yolov5/yolov5-mask-42-master/data/cocoons/images/val
+
+# number of classes
+nc: 6
+
+# class names
+names: ['lan','huang','shang','chai','ji','tiao']
