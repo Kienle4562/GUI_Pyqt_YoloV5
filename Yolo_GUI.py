@@ -1,4 +1,6 @@
 import sys
+from datetime import date
+
 import serial
 import serial.tools.list_ports
 import time
@@ -42,22 +44,38 @@ from utils.torch_utils import select_device, time_sync
 
 from deep_sort.utils.parser import get_config##K
 from deep_sort.deep_sort import DeepSort##K
-
+from openpyxl import load_workbook
 count = 0 ##K
 data = [] ##K
 
 
 def count_obj(box, w, h, id):
-    print("Tets",box,w,h,id)
+    # print("Tets",box,w,h,id)
     global count, data
+    today = date.today()
     # center_coordinates = (int(box[0]+(box[2]-box[0])/2) , int(box[1]+(box[3]-box[1])/2))
-    print("Test1",(box[1] + (box[3] - box[1]) / 2),":",(h-350))
+    # print("Test1",(box[1] + (box[3] - box[1]) / 2),":",(h-350))
     if int(box[1] + (box[3] - box[1]) / 2) > (h - 350):
-        print("Test2")
         if id not in data:
             count += 1
             data.append(id)
             print('count', count)
+
+            d1 = today.strftime("%d/%m/%Y")
+            wb = load_workbook('Test.xlsm', keep_vba=True)
+            sh = wb.active
+            ws = wb['My sheet']
+            countA = sh.max_row
+            Day1 = sh.cell(row=countA, column=1).value
+            # print("counta2",countA,"countA:",countA,"day1",Day1,"d",d1)
+            if Day1 == d1:
+                ws.cell(row=countA, column=2).value = count
+                wb.save('Test.xlsm')
+            else:
+                countA += 1
+                ws.cell(row=countA, column=1).value = d1
+                ws.cell(row=countA, column=2).value = count
+                wb.save('Test.xlsm')
 
 
 class MainWindows(QtWidgets.QWidget, Ui_Form):
@@ -438,7 +456,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         config_deepsort = 'deep_sort/configs/deep_sort.yaml'##K
         deep_sort_model = 'osnet_x0_25'##
 
-        project = "WindowsPath('runs/track')"
+        project = "runs/track"
         name = 'exp'
         exist_ok = False
         save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
@@ -511,6 +529,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 s += '%gx%g ' % im.shape[2:]  # print string
                 gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
                 imc = im0.copy() if save_crop else im0  # for save_crop
+
                 cv2.imwrite("images/tmp/single_org_vid.jpg", im0)
                 annotator = Annotator(im0, line_width=line_thickness, example=str(names))
 
@@ -612,7 +631,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 color = (0, 255, 0)
                 start_point = (0, h - 350)
                 end_point = (w, h - 350)
-                frame_resized = cv2.line(im0, start_point, end_point, color, thickness=2)
+                frame_resized = cv2.line(im0, start_point, end_point, color, thickness=1)
 
                 cv2.imwrite("images/tmp/single_result_vid.jpg", frame_resized)
                 if self.checkBox_circle.checkState() > 0:
@@ -638,12 +657,12 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
                         # draw ellipse
                         result = img.copy()
+
                         cv2.ellipse(result, ellipse, (0, 255, 0), 3)
 
                         # draw circle at center
                         xc, yc = ellipse[0]
                         cv2.circle(result, (int(xc), int(yc)), 10, (255, 255, 255), -1)
-
                         # draw vertical line
                         # compute major radius
                         rmajor = max(d1, d2) / 2
@@ -661,6 +680,9 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                     else:
                         cv2.imwrite("images/tmp/single_result_vid.jpg", thresh)
                 #self.label_video.setPixmap(QPixmap("test.jpg"))
+
+                print("r5e", str(count))
+                print("r6e", im0)
                 self.label_video.setPixmap(QPixmap("images/tmp/single_result_vid.jpg"))
                 self.label_video.setScaledContents(True)
 

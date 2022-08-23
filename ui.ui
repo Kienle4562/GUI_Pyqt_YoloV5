@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>980</width>
-    <height>618</height>
+    <width>1111</width>
+    <height>922</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,7 +31,7 @@
         <item>
          <widget class="QTabWidget" name="tabWidget">
           <property name="currentIndex">
-           <number>1</number>
+           <number>2</number>
           </property>
           <widget class="QWidget" name="tab">
            <attribute name="title">
@@ -149,7 +149,7 @@
            <attribute name="title">
             <string>Other Configuration</string>
            </attribute>
-           <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <layout class="QVBoxLayout" name="verticalLayout_14">
             <item>
              <layout class="QFormLayout" name="formLayout_5">
               <item row="0" column="0">
@@ -218,6 +218,98 @@
              </layout>
             </item>
            </layout>
+          </widget>
+          <widget class="QWidget" name="tab_5">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <attribute name="title">
+            <string>Settings Yolo</string>
+           </attribute>
+           <widget class="QWidget" name="layoutWidget">
+            <property name="geometry">
+             <rect>
+              <x>10</x>
+              <y>10</y>
+              <width>301</width>
+              <height>132</height>
+             </rect>
+            </property>
+            <layout class="QFormLayout" name="formLayout_6">
+             <item row="0" column="0">
+              <widget class="QLabel" name="lb_7">
+               <property name="text">
+                <string>Yolov5 Model:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="lb_8">
+               <property name="text">
+                <string>Detect:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QComboBox" name="box_8">
+               <item>
+                <property name="text">
+                 <string>Car</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Truck</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>People</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Car</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="lb_9">
+               <property name="text">
+                <string>Point Right:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLineEdit" name="lineEdit"/>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="lb_10">
+               <property name="text">
+                <string>Point Left:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QLineEdit" name="lineEdit_2"/>
+             </item>
+             <item row="0" column="1">
+              <widget class="QPushButton" name="pushButton_2">
+               <property name="text">
+                <string>Upload Model</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QPushButton" name="pushButton_3">
+               <property name="text">
+                <string>Area Configuration</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </widget>
          </widget>
         </item>
@@ -596,6 +688,25 @@ p, li { white-space: pre-wrap; }
        <string>Still Image</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="left_img">
+         <property name="minimumSize">
+          <size>
+           <width>200</width>
+           <height>200</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>166770</width>
+           <height>166770</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
        <item row="3" column="0">
         <layout class="QHBoxLayout" name="horizontalLayout_6">
          <item>
@@ -650,32 +761,6 @@ p, li { white-space: pre-wrap; }
          </item>
         </layout>
        </item>
-       <item row="2" column="0">
-        <widget class="Line" name="line_3">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="left_img">
-         <property name="minimumSize">
-          <size>
-           <width>200</width>
-           <height>200</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>166770</width>
-           <height>166770</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
        <item row="1" column="0">
         <widget class="QLabel" name="right_img">
          <property name="minimumSize">
@@ -686,6 +771,13 @@ p, li { white-space: pre-wrap; }
          </property>
          <property name="text">
           <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="Line" name="line_3">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
          </property>
         </widget>
        </item>

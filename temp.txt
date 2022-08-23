@@ -1,1 +1,1 @@
-[tensor(136., device='cuda:0'), tensor(160., device='cuda:0'), tensor(176., device='cuda:0'), tensor(199., device='cuda:0')]car 0.77
+[tensor(510., device='cuda:0'), tensor(285., device='cuda:0'), tensor(538., device='cuda:0'), tensor(307., device='cuda:0')]car 0.70
