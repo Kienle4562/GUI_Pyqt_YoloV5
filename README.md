@@ -66,8 +66,8 @@ Cần lưu ý những điểm sau：
 Những gì tôi đã tạo ở đây là môi trường python3.8, phiên bản đã cài đặt của Pytorch là 1.8.0 và lệnh như sau:
 
 ```cmd
-conda install pytorch==1.8.0 torchvision torchaudio cudatoolkit=10.2 # 注意这条命令指定Pytorch的版本和cuda的版本
-conda install pytorch==1.8.0 torchvision==0.9.0 torchaudio==0.8.0 cpuonly # CPU的小伙伴直接执行这条命令即可
+    conda install pytorch==1.8.0 torchvision torchaudio cudatoolkit=10.2 # Lưu ý rằng lệnh này chỉ định phiên bản của Pytorch và phiên bản của cuda
+conda install pytorch==1.8.0 torchvision==0.9.0 torchaudio==0.8.0 cpuonly # Đối tác nhỏ của CPU có thể trực tiếp thực hiện lệnh này
 ```
 
 Sau khi cài đặt xong, hãy kiểm tra xem GPU có
