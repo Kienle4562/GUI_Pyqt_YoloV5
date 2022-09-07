@@ -1,1 +1,1 @@
-[tensor(510., device='cuda:0'), tensor(285., device='cuda:0'), tensor(538., device='cuda:0'), tensor(307., device='cuda:0')]car 0.70
+[tensor(875.), tensor(251.), tensor(968.), tensor(329.)] Object has been counted: 32

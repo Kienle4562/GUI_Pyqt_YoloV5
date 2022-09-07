@@ -34,6 +34,7 @@ ROOT = FILE.parents[0]  # YOLOv5 root directory
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
+
 from models.common import DetectMultiBackend
 from utils.datasets import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
 from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr,
@@ -98,14 +99,23 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         # Image reading process
         self.output_size = 480
         self.img2predict = ""
-        self.device = '0'
+        self.device = 'cpu'
+        self.deviceName = 'CPU'
+        self.classes = '0'
+        self.pointRight = '200'
+        self.pointLeft = '200'
+        self.model_path = "Model_Yolo/yolov5n.pt"
         # Initialize the video read thread
         self.vid_source = '0'  # The initial setting is the camera
         self.stopEvent = threading.Event()
         self.webcam = True
         self.stopEvent.clear()
-        self.model = self.model_load(weights="runs/train/exp12/weights/best.pt",
-                                     device=self.device)  # todo A device indicating where the model is loaded
+        # self.model = self.model_load(weights=self.model_path,
+        #                              device=self.device)
+        # todo A device indicating where the model is loaded
+        self.model = self.model_load(weights="Model_Yolo/yolov5n.pt",
+                                   device='cpu')
+
         self.reset_vid()
 
     '''
@@ -126,7 +136,8 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         half &= pt and device.type != 'cpu'  # half precision only supported by PyTorch on CUDA
         if pt:
             model.model.half() if half else model.model.float()
-        print("Model loading is complete!")
+            print("Mode!", weights)
+        print("Model loading is complete!",weights)
         return model
     def reset_vid(self):
         self.pushButton_streaming.setEnabled(True)
@@ -134,7 +145,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.label_video.setPixmap(QPixmap("images/UI/yolo.jpg"))
 
         self.label_video.setScaledContents(True)
-        self.vid_source = '0'
+        # self.vid_source = '0'
         self.webcam = True
     def init(self):
         # Serial port detection button
@@ -176,9 +187,98 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.pushButton_streaming.clicked.connect(self.open_cam)
         self.pushButton_loadmp4.clicked.connect(self.open_mp4)
         self.pushButton_stopscan.clicked.connect(self.close_vid)
+
+        self.pushButton_upload_yolo.clicked.connect(self.open_model_yolo)
+        self.buttonUpdateSettings.clicked.connect(self.yolo_configuration_settings)
     '''
     ***Upload image***
     '''
+    def yolo_configuration_settings(self):
+        # self.checkBox_Settings.setEnabled(False)
+        number1 = self.lineEdit.text()
+        number2 = self.lineEdit_4.text()
+        number3 = self.lineEdit_2.text()
+        # SelectCamera
+        if self.lineEdit.text() != "":
+            try:
+                number1 = int(number1)
+                self.vid_source = str(self.lineEdit.text())
+            except Exception:
+                QMessageBox.about(self, 'Error', 'Input can only be a number \nEx:0 or 1 or...')
+                pass
+        else:
+            self.vid_source = '0'
+        self.lineEdit.setText(str(self.vid_source))
+        #Select GPU
+        if str(self.box_7.currentText()) == 'Graphics Card':
+            self.device = str('0') #GPU
+            self.deviceName = str('Graphics Card')
+        else:
+            self.device = str('cpu') #CPU
+            self.deviceName = str('CPU')
+        # Select Object
+        object = str(self.box_8.currentText())
+        self.classes = object[0:1]
+        #Point Rigth
+        if self.lineEdit_4.text() != "":
+            try:
+                number2 = int(number2)
+                self.pointRight = int(self.lineEdit_4.text())
+            except Exception:
+                QMessageBox.about(self, 'Error', 'Input point rigth can only be number')
+                pass
+        else:
+            self.pointRight = 250
+        self.lineEdit_4.setText(str(self.pointRight))
+        #Point Left
+        if self.lineEdit_2.text() != "":
+            try:
+                number3 = int(number3)
+                self.pointLeft = int(self.lineEdit_2.text())
+            except Exception:
+                QMessageBox.about(self, 'Error', 'Input point left can only be a number')
+                pass
+        else:
+            self.pointLeft = 250
+        self.lineEdit_2.setText(str(self.pointLeft))
+
+        # filepath_not_exist = str(self.model_path)
+        basename = os.path.basename(self.model_path)
+        self.pushButton_upload_yolo.setText(str(basename))
+        # Load model #Select Yolo Model
+        fileName = self.model_path
+        if fileName:
+            self.model = self.model_load(weights=str(fileName),
+                            device=str(self.device))  #
+            print("Upload model yolo complete:",str(fileName))
+            self.textBrowser_pic.setText("Upload model yolo complete")
+            self.textBrowser_video.setText("Upload model yolo complete")
+            self.pushButton_upload_yolo.setText(basename)
+
+        #Show resul
+        t= "Cam:"+str(self.vid_source)+"  Yolo Model:"+str(basename)+"  GPU:"+str(self.device)+'\n'+"Object:"+str(object)+"  Point Right:"+str(self.pointRight)+"  Point Left:"+str(self.pointLeft)
+        self.textBrowser_video.setText(str(t))
+        self.textBrowser_pic.setText(str(t))
+        # Load model
+        fileName = self.model_path
+        if fileName:
+            self.model = self.model_load(weights=str(fileName),
+                                         device=str(self.device))  #
+            print("Upload model yolo complete:", str(fileName))
+            self.pushButton_upload_yolo.setText(basename)
+        QMessageBox.about(self, 'Complete', 'Configuration has been updated')
+
+    def open_model_yolo(self):
+        fileName, fileType = QFileDialog.getOpenFileName(self, 'Choose file', '', '*.pt')
+        filepath_not_exist = str(fileName)
+        basename = os.path.basename(filepath_not_exist)
+        self.model_path = fileName
+        if fileName:
+            print("Upload model yolo complete:",str(fileName))
+            self.textBrowser_pic.setText("Upload model yolo complete")
+            self.textBrowser_video.setText("Upload model yolo complete")
+            self.pushButton_upload_yolo.setText(basename)
+
     def upload_img(self):
         # Select the video file to read
         fileName, fileType = QFileDialog.getOpenFileName(self, 'Choose file', '', '*.jpg *.png *.tif *.jpeg')
@@ -203,20 +303,26 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
     ***Detect pictures***
     '''
     def detect_img(self):
+        self.lineEdit.setText(str(self.vid_source))
+        self.lineEdit_4.setText('0')
+        self.lineEdit_2.setText('0')
+        self.pushButton_upload_yolo.setText(str(os.path.basename(self.model_path)))
+
         model = self.model
+        print("DV:",self.device)
         output_size = self.output_size
         source = self.img2predict  # file/dir/URL/glob, 0 for webcam
         imgsz = 640  # inference size (pixels)
         conf_thres = 0.25  # confidence threshold
         iou_thres = 0.45  # NMS IOU threshold
         max_det = 1000  # maximum detections per image
-        device = self.device  # cuda device, i.e. 0 or 0,1,2,3 or cpu
+        # device = self.device  # cuda device, i.e. 0 or 0,1,2,3 or cpu
         view_img = False  # show results
         save_txt = False  # save results to *.txt
         save_conf = False  # save confidences in --save-txt labels
         save_crop = False  # save cropped prediction boxes
         nosave = False  # do not save images/videos
-        classes = 2  # filter by class: --class 0, or --class 0 2 3
+        classes = int(self.classes)  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms = False  # class-agnostic NMS
         augment = False  # ugmented inference
         visualize = False  # visualize features
@@ -292,7 +398,9 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
                         # Write results
+                        count_object = 0
                         for *xyxy, conf, cls in reversed(det):
+                            count_object= count_object + 1
                             if save_txt:  # Write to file
                                 xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(
                                     -1).tolist()  # normalized xywh
@@ -302,10 +410,12 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
                             if save_img or save_crop or view_img:  # Add bbox to image
                                 c = int(cls)  # integer class
-                                label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                                str_box = annotator.box_label(xyxy, label, color=colors(c, True))
+                                # label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
+                                # str_box = annotator.box_label(xyxy,label, color=colors(c, True))
+                                str_box = annotator.box_label(xyxy, color=colors(c, True))
 
-                                t = str(xyxy)+str(label)
+                                # t = str(xyxy)+str(label)
+                                t = str(xyxy)+" Object has been counted: "+str(count_object)
                                 with open("temp.txt", "w") as f:
                                     f.write(t + "\n")
                                 self.textBrowser_pic.setText(t)
@@ -342,8 +452,8 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             # fit contour to ellipse and get ellipse center, minor and major diameters and angle in degree
                             ellipse = cv2.fitEllipse(big_contour)#big_contour)
                             (xc, yc), (d1, d2), angle = ellipse
-                            print(xc, yc, d1, d1, angle)
-
+                            # print(xc, yc, d1, d1, angle)
+                            # print("big_contour",big_contour)
                             # draw ellipse
                             result = img.copy()
                             cv2.ellipse(result, ellipse, (0, 255, 0), 3)
@@ -395,7 +505,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.pushButton_streaming.setEnabled(False)
         self.pushButton_loadmp4.setEnabled(False)
         self.pushButton_stopscan.setEnabled(True)
-        self.vid_source = '0'
+        # self.vid_source = '0'
         self.webcam = True
         # Reset the button to him
         # print("GOGOGO")
@@ -417,6 +527,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
             th = threading.Thread(target=self.detect_vid)
             th.start()
 
+
     '''
     ### Video start event ### 
     '''
@@ -424,7 +535,17 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
     # The main functions of the video and the camera are the same, but the incoming source is different.
     def detect_vid(self):
         # pass
+
+        self.buttonUpdateSettings.setEnabled(False)
+        self.lineEdit.setText(str(self.vid_source)) #CAM
+        self.pushButton_upload_yolo.setText(str(os.path.basename(self.model_path))) #Model Yolo
+        self.lineEdit_4.setText(str(self.pointRight)) #Point Right
+        self.lineEdit_2.setText(str(self.pointLeft)) #Point Left
+
+
+
         model = self.model
+        print("MD",self.model_path)
         output_size = self.output_size
         # source = self.img2predict  # file/dir/URL/glob, 0 for webcam
         imgsz = 640  # inference size (pixels)
@@ -437,7 +558,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         save_conf = False  # save confidences in --save-txt labels
         save_crop = False  # save cropped prediction boxes
         nosave = False  # do not save images/videos
-        classes = 2 #None  # filter by class: --class 0, or --class 0 2 3
+        classes = int(self.classes) #None  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms = False  # class-agnostic NMS
         augment = False  # ugmented inference
         visualize = False  # visualize features
@@ -542,9 +663,6 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                     for c in det[:, -1].unique():
                         n = (det[:, -1] == c).sum()  # detections per class
                         s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
-                    print(len(det))
-                    print(det[0][4])
-
                     xywhs = xyxy2xywh(det[:, 0:4]) ##K
                     confs = det[:, 4]##K
                     clss = det[:, 5]##K
@@ -566,8 +684,11 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             #count
                             count_obj(bboxes,w,h,id)
                             c = int(cls)  # integer class
-                            label = f'{id} {names[c]} {conf:.2f}'
-                            annotator.box_label(bboxes, label, color=colors(c, True))
+                            # TODO show text 'car 0.....'
+                            # label = f'{id} {names[c]} {conf:.2f}'
+                            # annotator.box_label(bboxes, label, color=colors(c, True))
+
+                            annotator.box_label(bboxes, color=colors(c, True))
 
                             # if save_txt:
                             #     # to MOT format
@@ -598,13 +719,14 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
                         if save_img or save_crop or view_img:  # Add bbox to image
                             c = int(cls)  # integer class
-                            label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                            str_box = annotator.box_label(xyxy, label, color=colors(c, True))
-                            t = str(xyxy)+str(label)
-                            with open("temp.txt", "w") as f:
-                                f.write(t+"\n")
+                            # label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
+                            # str_box = annotator.box_label(xyxy, label, color=colors(c, True))
+                            # t = str(xyxy)
+                            # print("604", str(label), str(xyxy));
+                            # with open("temp.txt", "w") as f:
+                            #     f.write(t+"\n")
                             #
-                                # self.textBrowser_video.setText(str_box) ###Loi in hear
+                            # self.textBrowser_video.setText(str(count)) ###Loi in hear
 
                             # if save_crop:
                             #     save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
@@ -629,8 +751,8 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             fontScale, color, thickness, cv2.LINE_AA)
 
                 color = (0, 255, 0)
-                start_point = (0, h - 350)
-                end_point = (w, h - 350)
+                start_point = (0, h - int(self.pointRight))
+                end_point = (w, h - int(self.pointLeft))
                 frame_resized = cv2.line(im0, start_point, end_point, color, thickness=1)
 
                 cv2.imwrite("images/tmp/single_result_vid.jpg", frame_resized)
@@ -653,7 +775,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                         # fit contour to ellipse and get ellipse center, minor and major diameters and angle in degree
                         ellipse = cv2.fitEllipse(big_contour)
                         (xc, yc), (d1, d2), angle = ellipse
-                        print(xc, yc, d1, d1, angle)
+                        # print(xc, yc, d1, d1, angle)
 
                         # draw ellipse
                         result = img.copy()
@@ -670,7 +792,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             angle = angle - 90
                         else:
                             angle = angle + 90
-                        print(angle)
+                        # print(angle)
                         xtop = xc + math.cos(math.radians(angle)) * rmajor
                         ytop = yc + math.sin(math.radians(angle)) * rmajor
                         xbot = xc + math.cos(math.radians(angle + 180)) * rmajor
@@ -680,9 +802,6 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                     else:
                         cv2.imwrite("images/tmp/single_result_vid.jpg", thresh)
                 #self.label_video.setPixmap(QPixmap("test.jpg"))
-
-                print("r5e", str(count))
-                print("r6e", im0)
                 self.label_video.setPixmap(QPixmap("images/tmp/single_result_vid.jpg"))
                 self.label_video.setScaledContents(True)
 
@@ -701,26 +820,13 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         # self.reset_vid()
 
     '''
-    ### Count detect ###
-    '''
-    # def count_obj(box, w, h, id):
-    #     global count, data
-    #     # today = date.today()
-    #
-    #     # center_coordinates = (int(box[0]+(box[2]-box[0])/2) , int(box[1]+(box[3]-box[1])/2))
-    #     if int(box[1] + (box[3] - box[1]) / 2) > (h - 350):
-    #         if id not in data:
-    #             count += 1
-    #             data.append(id)
-    #             print('count', count)
-    '''
     ### Video reset event ### 
     '''
 
     def close_vid(self):
         self.stopEvent.set()
         self.reset_vid()
-
+        self.buttonUpdateSettings.setEnabled(True)
 
     # Serial port detection
     def port_check(self):
