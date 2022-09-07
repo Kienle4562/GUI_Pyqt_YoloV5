@@ -118,6 +118,13 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
         self.reset_vid()
 
+        self.pushButton_streaming.setEnabled(False)
+        self.pushButton_loadmp4.setEnabled(False)
+        self.pushButton_stopscan.setEnabled(False)
+        self.pushButton_loadpic.setEnabled(False)
+        self.pushButton_scanpic.setEnabled(False)
+        self.pushButton_comparePic.setEnabled(False)
+
     '''
     ***Model initialization***
     '''
@@ -267,6 +274,13 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
             print("Upload model yolo complete:", str(fileName))
             self.pushButton_upload_yolo.setText(basename)
         QMessageBox.about(self, 'Complete', 'Configuration has been updated')
+
+        self.pushButton_streaming.setEnabled(True)
+        self.pushButton_loadmp4.setEnabled(True)
+        self.pushButton_stopscan.setEnabled(True)
+        self.pushButton_loadpic.setEnabled(True)
+        self.pushButton_scanpic.setEnabled(True)
+        self.pushButton_comparePic.setEnabled(True)
 
     def open_model_yolo(self):
         fileName, fileType = QFileDialog.getOpenFileName(self, 'Choose file', '', '*.pt')
