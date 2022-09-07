@@ -15,16 +15,17 @@ Trước tiên, hãy xem hiệu ứng mà chúng tôi muốn đạt được. Ch
 phát hiện mặt nạ thông qua dữ liệu và đóng gói nó với pyqt5 để thực hiện các chức năng 
 phát hiện mặt nạ hình ảnh, phát hiện mặt nạ video và phát hiện mặt nạ thời gian thực 
 của máy ảnh.
-![image-20211212181048969](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212181048969.png)
 
-![image-20211212194124635](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212194124635.png)
+[//]: # (![image-20211212181048969]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212181048969.png&#41;)
+
+[//]: # (![image-20211212194124635]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212194124635.png&#41;)
 
 ## Tải xuống mã
 
 Địa chỉ tải xuống của mã là：[[YOLOV5-mask-42: Hệ thống phát hiện mặt nạ dựa trên video dạy học do 
 YOLOV5 cung cấp (gitee.com)](https://gitee.com/song-laogou/yolov5-mask-42)](https://github.com/ultralytics/yolov5)
 
-![image-20211214191424378](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211214191424378.png)
+[//]: # (![image-20211214191424378]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211214191424378.png&#41;)
 
 ## Môi trường cấu hình
 
@@ -72,7 +73,7 @@ conda install pytorch==1.8.0 torchvision==0.9.0 torchaudio==0.8.0 cpuonly # Đ�
 
 Sau khi cài đặt xong, hãy kiểm tra xem GPU có
 
-![image-20210726172454406](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210726172454406.png)
+[//]: # (![image-20210726172454406]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210726172454406.png&#41;)
 
 ### Cài đặt pycocotools
 
@@ -134,7 +135,7 @@ Thực thi lệnh `pip install labelimg -i https://mirror.baidu.com/pypi/simple`
 
 Giao diện sau khi khởi động phần mềm như sau：
 
-![image-20210609172557286](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210609172557286.png)
+[//]: # (![image-20210609172557286]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210609172557286.png&#41;)
 
 ### Chú thích dữ liệu
 
@@ -143,7 +144,7 @@ Mặc dù là đào tạo theo mô hình của yolo nhưng ở đây chúng tôi
 
 **1.Mở thư mục hình ảnh**
 
-![image-20210610004158135](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210610004158135.png)
+[//]: # (![image-20210610004158135]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210610004158135.png&#41;)
 
 **2.Đặt thư mục lưu các tệp chú thích và thiết lập lưu tự động**
 
@@ -151,19 +152,19 @@ Mặc dù là đào tạo theo mô hình của yolo nhưng ở đây chúng tôi
 
 **3.Bắt đầu gắn nhãn, đóng khung, gắn nhãn nhãn của mục tiêu, `crtl + s` để lưu, sau đó d chuyển sang nhãn tiếp theo để tiếp tục gắn nhãn, lặp lại**
 
-![image-20211212201302682](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212201302682.png)
+[//]: # (![image-20211212201302682]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212201302682.png&#41;)
 
 Các phím tắt của labelimg như sau. Học các phím tắt có thể giúp bạn cải thiện hiệu quả của việc gắn nhãn dữ liệu。
 
-![image-20210609171855504](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210609171855504.png)
+[//]: # (![image-20210609171855504]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210609171855504.png&#41;)
 
 Sau khi chú thích xong, bạn sẽ nhận được một loạt các tệp txt. Txt ở đây là tệp chú thích của phát hiện mục tiêu. Tên của tệp txt và tệp hình ảnh tương ứng 1-1, như được hiển thị trong hình sau:
 
-![image-20211212170509714](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212170509714.png)
+[//]: # (![image-20211212170509714]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212170509714.png&#41;)
 
 Mở tệp chú thích cụ thể và bạn sẽ thấy nội dung sau. Mỗi dòng trong tệp txt đại diện cho một mục tiêu, được phân biệt bằng dấu cách và đại diện cho id danh mục của mục tiêu và tọa độ trung tâm được chuẩn hóa x, tọa độ y, w và h của hộp đích.
 
-![image-20211212170853677](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212170853677.png)
+[//]: # (![image-20211212170853677]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212170853677.png&#41;)
 
 **4.Sửa đổi tệp cấu hình tập dữ liệu**
 
@@ -184,7 +185,7 @@ YOLO_Mask
 
 Tệp cấu hình ở đây là để thuận tiện cho quá trình đào tạo sau này của chúng tôi. Chúng tôi cần tạo tệp `mask_data.yaml` trong thư mục dữ liệu, như thể hiện trong hình sau:
 
-![image-20211212174510070](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212174510070.png)
+[//]: # (![image-20211212174510070]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212174510070.png&#41;)
 
 Đến đây, phần xử lý tập dữ liệu về cơ bản đã xong, và nội dung tiếp theo sẽ là huấn luyện mô hình!
 
@@ -206,15 +207,15 @@ Thực thi đoạn mã sau để chạy chương trình:
 python train.py --data mask_data.yaml --cfg mask_yolov5s.yaml --weights pretrained/yolov5s.pt --epoch 100 --batch-size 4 --device cpu
 ```
 
-![image-20210610113348751](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210610113348751.png)
+[//]: # (![image-20210610113348751]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210610113348751.png&#41;)
 
 Sau khi mã huấn luyện được thực thi thành công, thông tin sau sẽ được xuất ra trên dòng lệnh, bước tiếp theo là bạn yên tâm chờ quá trình huấn luyện mô hình kết thúc。
 
-![image-20210610112655726](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210610112655726.png)
+[//]: # (![image-20210610112655726]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210610112655726.png&#41;)
 
 Theo kich thuoc cua dat va kiem soat, mo hinh duoc chup tu sau mot thoi gian dai, cong suat phat trien.：
 
-![image-20210610134412258](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210610134412258.png)
+[//]: # (![image-20210610134412258]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20210610134412258.png&#41;)
 
 Mô hình được đào tạo và tệp nhật ký có thể được tìm thấy trong thư mục `train/running/exp3`
 
@@ -228,11 +229,12 @@ Ngoài hiệu ứng phát hiện mà bạn có thể thấy ở phần đầu c�
 Nói chung, chúng ta sẽ tiếp xúc với hai chỉ số, đó là độ thu hồi và độ chính xác. Hai chỉ số p và r chỉ đơn giản là để đánh giá chất lượng của mô hình từ một góc độ và chúng đều có giá trị từ 0 đến 1. Trong số đó, gần bằng 1 có nghĩa là hiệu suất của mô hình tốt hơn và gần bằng 0 có nghĩa là hiệu suất của mô hình kém hơn. Để đánh giá toàn diện hiệu suất của phát hiện mục tiêu, bản đồ mật độ trung bình thường được sử dụng để đánh giá thêm chất lượng của mô hình. Bằng cách đặt các ngưỡng tin cậy khác nhau, chúng ta có thể nhận được giá trị p và giá trị r được mô hình tính toán theo các ngưỡng khác nhau. Nói chung, giá trị p và giá trị r có tương quan nghịch và chúng có thể được vẽ như hình bên dưới. Như được hiển thị trong đường cong, khu vực của đường cong được gọi là AP. Mỗi mục tiêu trong mô hình phát hiện mục tiêu có thể tính toán một giá trị AP và giá trị mAP của mô hình có thể nhận được bằng cách lấy trung bình tất cả các giá trị AP. Lấy bài viết này làm ví dụ, chúng tôi có thể tính toán Đối với các giá trị AP của hai mục tiêu đội mũ bảo hiểm và không đội mũ bảo hiểm, chúng tôi tính trung bình các giá trị AP của hai nhóm để thu được giá trị mAP của toàn bộ mô hình. Giá trị càng gần với 1, hiệu suất của mô hình càng tốt.
 
 Để biết thêm các định nghĩa học thuật, bạn có thể xem chúng trên Zhihu hoặc csdn. Lấy mô hình mà chúng tôi đã đào tạo lần này làm ví dụ. Sau khi mô hình kết thúc, bạn sẽ tìm thấy ba hình ảnh đại diện cho tỷ lệ nhớ lại và độ chính xác của mô hình của chúng tôi khi xác nhận đặt. tỷ lệ và mật độ trung bình trung bình.
-![image-20211212175851524](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212175851524.png)
+
+[//]: # (![image-20211212175851524]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212175851524.png&#41;)
 
 Lấy đường cong PR làm ví dụ, bạn có thể thấy rằng mô hình của chúng tôi có mật độ trung bình trung bình là 0,832 trên bộ xác nhận。
 
-![PR_curve](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/PR_curve.png)
+[//]: # (![PR_curve]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/PR_curve.png&#41;)
 
 Nếu không có đường cong như vậy trong thư mục của bạn, có thể do mô hình của bạn dừng lại giữa chừng trong quá trình đào tạo và không thực hiện quá trình xác minh. Bạn có thể tạo những hình ảnh này bằng lệnh sau。
 
@@ -242,7 +244,7 @@ python val.py --data data/mask_data.yaml --weights runs/train/exp_yolov5s/weight
 
 Cuối cùng, đây là danh sách giải thích chi tiết về các chỉ số đánh giá, đây có thể nói là định nghĩa sơ khai nhất.。
 
-![img](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/20200411141530456.png)
+[//]: # (![img]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/20200411141530456.png&#41;)
 
 ## sử dụng mô hình
 
@@ -271,11 +273,11 @@ Ví dụ: lấy mô hình mặt nạ của chúng tôi làm ví dụ, nếu chú
 
 Phần của giao diện trực quan nằm trong tệp `window.py`, là thiết kế giao diện được hoàn thành bởi pyqt5. Trước khi bắt đầu giao diện, bạn cần thay thế mô hình bằng mô hình mà bạn đã đào tạo. Vị trí thay thế nằm trong phần thứ 60 của `window.py` OK, sửa đổi nó thành địa chỉ mô hình của bạn. Nếu bạn có GPU, bạn có thể đặt thiết bị thành 0, có nghĩa là sử dụng GPU dòng 0, có thể tăng tốc độ nhận dạng mô hình.。
 
-![image-20211212194547804](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212194547804.png)
+[//]: # (![image-20211212194547804]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212194547804.png&#41;)
 
 Sau khi thay xong, nhấp chuột phải để chạy để khởi động giao diện đồ họa, bạn hãy tự mình chạy thử để xem hiệu quả.
 
-![image-20211212194914890](https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212194914890.png)
+[//]: # (![image-20211212194914890]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212194914890.png&#41;)
 
 ## Tìm tôi
 
