@@ -274,7 +274,7 @@ Ví dụ: lấy mô hình mặt nạ của chúng tôi làm ví dụ, nếu chú
 Phần của giao diện trực quan nằm trong tệp `window.py`, là thiết kế giao diện được hoàn thành bởi pyqt5. Trước khi bắt đầu giao diện, bạn cần thay thế mô hình bằng mô hình mà bạn đã đào tạo. Vị trí thay thế nằm trong phần thứ 60 của `window.py` OK, sửa đổi nó thành địa chỉ mô hình của bạn. Nếu bạn có GPU, bạn có thể đặt thiết bị thành 0, có nghĩa là sử dụng GPU dòng 0, có thể tăng tốc độ nhận dạng mô hình.。
 
 [//]: # (![image-20211212194547804]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212194547804.png&#41;)
-
+ 
 Sau khi thay xong, nhấp chuột phải để chạy để khởi động giao diện đồ họa, bạn hãy tự mình chạy thử để xem hiệu quả.
 
 [//]: # (![image-20211212194914890]&#40;https://vehicle4cm.oss-cn-beijing.aliyuncs.com/typoraimgs/image-20211212194914890.png&#41;)

@@ -1,1 +1,1 @@
-[tensor(875.), tensor(251.), tensor(968.), tensor(329.)] Object has been counted: 32
+[tensor(209.), tensor(542.), tensor(389.), tensor(659.)] Object has been counted: 16

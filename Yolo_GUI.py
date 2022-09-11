@@ -551,7 +551,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         # pass
 
         self.buttonUpdateSettings.setEnabled(False)
-        self.lineEdit.setText(str(self.vid_source)) #CAM
+        # self.lineEdit.setText(str(self.vid_source)) #CAM
         self.pushButton_upload_yolo.setText(str(os.path.basename(self.model_path))) #Model Yolo
         self.lineEdit_4.setText(str(self.pointRight)) #Point Right
         self.lineEdit_2.setText(str(self.pointLeft)) #Point Left
