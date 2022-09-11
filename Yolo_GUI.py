@@ -1,26 +1,16 @@
-import sys
 from datetime import date
 
 import serial
 import serial.tools.list_ports
-import time
-from typing import List
-import random
 
 from PyQt5 import QtWidgets
 from gui import Ui_Form
-import cv2
-import numpy as np
 import math
-import json
-from multiprocessing import Pool
 import shutil
-import PyQt5.QtCore
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 import threading
-import argparse
 import os
 import sys
 from pathlib import Path
@@ -104,6 +94,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.classes = '0'
         self.pointRight = '200'
         self.pointLeft = '200'
+        self.checkGPU=str(torch.cuda.is_available())
         self.model_path = "Model_Yolo/yolov5n.pt"
         # Initialize the video read thread
         self.vid_source = '0'  # The initial setting is the camera
@@ -205,11 +196,16 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         number1 = self.lineEdit.text()
         number2 = self.lineEdit_4.text()
         number3 = self.lineEdit_2.text()
+
         # SelectCamera
         if self.lineEdit.text() != "":
             try:
                 number1 = int(number1)
-                self.vid_source = str(self.lineEdit.text())
+                cap = cv2.VideoCapture(number1, cv2.CAP_DSHOW)
+                if (cap.isOpened()):
+                    self.vid_source = str(self.lineEdit.text())
+                else:
+                    QMessageBox.about(self, 'Warning', "Can not detect the camera")
             except Exception:
                 QMessageBox.about(self, 'Error', 'Input can only be a number \nEx:0 or 1 or...')
                 pass
@@ -218,8 +214,11 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.lineEdit.setText(str(self.vid_source))
         #Select GPU
         if str(self.box_7.currentText()) == 'Graphics Card':
-            self.device = str('0') #GPU
-            self.deviceName = str('Graphics Card')
+            if self.checkGPU:
+                self.device = str('0') #GPU
+                self.deviceName = str('Graphics Card')
+            else:
+                QMessageBox.about(self, 'Warning', 'GPU not found. Please use CPU')
         else:
             self.device = str('cpu') #CPU
             self.deviceName = str('CPU')
