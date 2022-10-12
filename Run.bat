@@ -1,3 +1,3 @@
 @echo off
-"D:\GUI_Pyqt5+YoloV5\Python39\Scripts\python.exe" "D:\GUI_Pyqt5+YoloV5\Yolo_GUI.py"
+"C:\Users\lekie\AppData\Local\Programs\Python\Python39\python.exe" "..\GUI_Pyqt5+YoloV5\Yolo_GUI.py"
 pause
