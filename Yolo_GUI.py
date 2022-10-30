@@ -35,9 +35,8 @@ from models.common import DetectMultiBackend
 from utils.datasets import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
 from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr,
                            increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh)
-from utils.plots import Annotator, colors, save_one_box
+from utils.plots import Annotator, colors, save_one_box, save_one_box_lp
 from utils.torch_utils import select_device, time_sync
-
 
 from deep_sort.utils.parser import get_config##K
 from deep_sort.deep_sort import DeepSort##K
@@ -605,6 +604,45 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
     '''
 
     # The main functions of the video and the camera are the same, but the incoming source is different.
+    def detect_lp(self):
+        img = cv2.imread(self.filename)
+        plates = yolo_LP_detect(img, size=640)
+        list_plates = plates.pandas().xyxy[0].values.tolist()
+        list_read_plates = set()
+        if len(list_plates) == 0:
+            lp = helper.read_plate(yolo_license_plate, img)
+            if lp != "unknown":
+                # cv2.putText(img, lp, (7, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+                list_read_plates.add(lp)
+        else:
+            for plate in list_plates:
+                flag = 0
+                x = int(plate[0])  # xmin
+                y = int(plate[1])  # ymin
+                w = int(plate[2] - plate[0])  # xmax - xmin
+                h = int(plate[3] - plate[1])  # ymax - ymin
+                crop_img = img[y:y + h, x:x + w]
+                # cv2.rectangle(img, (int(plate[0]), int(plate[1])),
+                #               (int(plate[2]), int(plate[3])), color=(0, 0, 225),
+                #               thickness=2)
+                # cv2.imwrite("crop.jpg", crop_img)
+                # rc_image = cv2.imread("crop.jpg")
+                lp = ""
+                for cc in range(0, 2):
+                    for ct in range(0, 2):
+                        lp = helper.read_plate(yolo_license_plate,
+                                               utils_rotate.deskew(crop_img, cc, ct))
+                        if lp != "unknown":
+                            list_read_plates.add(lp)
+                            # cv2.putText(img, lp, (int(plate[0]), int(plate[1] - 10)),
+                            #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                            flag = 1
+                            break
+                    if flag == 1:
+                        break
+        # cv2.imshow('frame', img)
+        print(lp)
+
     def detect_vid(self):
         # pass
 
@@ -788,21 +826,25 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
                             # with open(txt_path + '.txt', 'a') as f:
                             #     f.write(('%g ' * len(line)).rstrip() % line + '\n')
-
+                        save_crop = 1
                         if save_img or save_crop or view_img:  # Add bbox to image
                             c = int(cls)  # integer class
-                            # label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                            # str_box = annotator.box_label(xyxy, label, color=colors(c, True))
-                            # t = str(xyxy)
-                            # print("604", str(label), str(xyxy));
-                            # with open("temp.txt", "w") as f:
-                            #     f.write(t+"\n")
-                            #
+                            label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
+                            str_box = annotator.box_label(xyxy, label, color=colors(c, True))
+                            t = str(xyxy)
+                            print("lnn:", str(label), str(xyxy));
+                            with open("temp.txt", "w") as f:
+                                f.write(t+"\n")
+
                             # self.textBrowser_video.setText(str(count)) ###Loi in hear
 
-                            # if save_crop:
-                            #     save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
-                            #                  BGR=True)
+                            if save_crop:
+                                save_one_box_lp(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
+                                             BGR=True)
+
+                                # print("save:",f'{p.stem}.jpg')
+                                # print(xyxy)
+                                # print(imc)
                 #self.label_video.setText(str_box)
                 # Print time (inference-only)
                 LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
