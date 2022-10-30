@@ -1,1 +1,1 @@
-[tensor(209.), tensor(542.), tensor(389.), tensor(659.)] Object has been counted: 16
+[tensor(1460., device='cuda:0'), tensor(392., device='cuda:0'), tensor(1944., device='cuda:0'), tensor(1322., device='cuda:0')] Object has been counted: 3

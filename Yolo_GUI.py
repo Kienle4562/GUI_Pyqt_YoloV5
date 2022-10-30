@@ -19,6 +19,12 @@ import torch
 import torch.backends.cudnn as cudnn
 import os.path as osp
 
+import function.helper as helper
+import function.utils_rotate as utils_rotate
+yolo_LP_detect = torch.hub.load('License-Plate-Recognition-main\yolov5', 'custom', path='License-Plate-Recognition-main\model\LP_detector.pt', force_reload=True, source='local')
+yolo_license_plate = torch.hub.load('License-Plate-Recognition-main\yolov5', 'custom', path='License-Plate-Recognition-main\model\LP_ocr.pt', force_reload=True, source='local')
+yolo_license_plate.conf = 0.60
+
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
 if str(ROOT) not in sys.path:
@@ -38,7 +44,6 @@ from deep_sort.deep_sort import DeepSort##K
 from openpyxl import load_workbook
 count = 0 ##K
 data = [] ##K
-
 
 def count_obj(box, w, h, id):
     # print("Tets",box,w,h,id)
@@ -136,6 +141,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
             model.model.half() if half else model.model.float()
             print("Mode!", weights)
         print("Model loading is complete!",weights)
+
         return model
     def reset_vid(self):
         self.pushButton_streaming.setEnabled(True)
@@ -256,6 +262,9 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         if fileName:
             self.model = self.model_load(weights=str(fileName),
                             device=str(self.device))  #
+
+            # self.model = self.model_load(weights="Recognition-main\model\LP_ocr.pt",
+            #                 device=str(self.device))
             print("Upload model yolo complete:",str(fileName))
             self.textBrowser_pic.setText("Upload model yolo complete")
             self.textBrowser_video.setText("Upload model yolo complete")
@@ -412,6 +421,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
                         # Write results
                         count_object = 0
+                        name = 0
                         for *xyxy, conf, cls in reversed(det):
                             count_object= count_object + 1
                             if save_txt:  # Write to file
@@ -420,6 +430,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                                 line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
                                 # with open(txt_path + '.txt', 'a') as f:
                                 #     f.write(('%g ' * len(line)).rstrip() % line + '\n')
+                            save_crop=1;
 
                             if save_img or save_crop or view_img:  # Add bbox to image
                                 c = int(cls)  # integer class
@@ -432,9 +443,57 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                                 with open("temp.txt", "w") as f:
                                     f.write(t + "\n")
                                 self.textBrowser_pic.setText(t)
-                                #if save_crop:
-                                #     save_one_box(xyxy, imc, file="P:/Item/Yolov5/yolov5-mask-42-master/images/box" / names[c] / f'{p.stem}.jpg',
-                                #                 BGR=True)
+                                save_dir = increment_path(Path("Sample_OutPut") / 'exp',
+                                                          exist_ok=True)  # increment run
+                                save_dir.mkdir(parents=True, exist_ok=True)  # make dir
+                                if save_crop:
+                                    save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
+                                                 BGR=True)
+                                    name = name + 1
+
+                                    if name == 1:
+                                        name1 = str("Sample_OutPut\exp\crops\motorcycle/"+ f'{p.stem}.jpg')
+                                    else:
+                                        name1 = str(
+                                            "Sample_OutPut\exp\crops\motorcycle/" + f'{p.stem}' + str(name) + ".jpg")
+                                    print("KIEB:",name1 )
+                                    img = cv2.imread(name1)
+                                    plates = yolo_LP_detect(img, size=640)
+                                    list_plates = plates.pandas().xyxy[0].values.tolist()
+                                    list_read_plates = set()
+                                    if len(list_plates) == 0:
+                                        lp = helper.read_plate(yolo_license_plate, img)
+                                        if lp != "unknown":
+                                            # cv2.putText(img, lp, (7, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+                                            list_read_plates.add(lp)
+                                    else:
+                                        for plate in list_plates:
+                                            flag = 0
+                                            x = int(plate[0])  # xmin
+                                            y = int(plate[1])  # ymin
+                                            w = int(plate[2] - plate[0])  # xmax - xmin
+                                            h = int(plate[3] - plate[1])  # ymax - ymin
+                                            crop_img = img[y:y + h, x:x + w]
+                                            # cv2.rectangle(img, (int(plate[0]), int(plate[1])),
+                                            #               (int(plate[2]), int(plate[3])), color=(0, 0, 225),
+                                            #               thickness=2)
+                                            # cv2.imwrite("crop.jpg", crop_img)
+                                            # rc_image = cv2.imread("crop.jpg")
+                                            lp = ""
+                                            for cc in range(0, 2):
+                                                for ct in range(0, 2):
+                                                    lp = helper.read_plate(yolo_license_plate,
+                                                                           utils_rotate.deskew(crop_img, cc, ct))
+                                                    if lp != "unknown":
+                                                        list_read_plates.add(lp)
+                                                        # cv2.putText(img, lp, (int(plate[0]), int(plate[1] - 10)),
+                                                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                                                        flag = 1
+                                                        break
+                                                if flag == 1:
+                                                    break
+                                    # cv2.imshow('frame', img)
+                                    print(lp)
                     # Print time (inference-only)
                     LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
                     # Stream results
@@ -496,7 +555,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
     # Video detection, the logic is basically the same, there are two functions, namely, the function of detecting the camera and the function of detecting video files, and the function of detecting the camera first。
 
     '''
-    ### UI close event ### 
+    ### UI close event ###
     '''
     def closeEvent(self, event):
         reply = QMessageBox.question(self,
@@ -511,7 +570,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
             event.ignore()
 
     '''
-    ### Video off event ### 
+    ### Video off event ###
     '''
 
     def open_cam(self):
@@ -526,7 +585,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         th.start()
 
     '''
-    ### Enable video file detection event ### 
+    ### Enable video file detection event ###
     '''
 
     def open_mp4(self):
@@ -542,7 +601,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
 
     '''
-    ### Video start event ### 
+    ### Video start event ###
     '''
 
     # The main functions of the video and the camera are the same, but the incoming source is different.
@@ -833,7 +892,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         # self.reset_vid()
 
     '''
-    ### Video reset event ### 
+    ### Video reset event ###
     '''
 
     def close_vid(self):
