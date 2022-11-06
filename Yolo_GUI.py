@@ -18,6 +18,7 @@ import cv2
 import torch
 import torch.backends.cudnn as cudnn
 import os.path as osp
+import numpy as np
 
 import function.helper as helper
 import function.utils_rotate as utils_rotate
@@ -72,6 +73,152 @@ def count_obj(box, w, h, id):
                 ws.cell(row=countA, column=2).value = count
                 wb.save('Test.xlsm')
 
+def xyxy2xywh(x):
+    # Convert nx4 boxes from [x1, y1, x2, y2] to [x, y, w, h] where xy1=top-left, xy2=bottom-right
+    y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
+    y[:, 0] = (x[:, 0] + x[:, 2]) / 2  # x center
+    y[:, 1] = (x[:, 1] + x[:, 3]) / 2  # y center
+    y[:, 2] = x[:, 2] - x[:, 0]  # width
+    y[:, 3] = x[:, 3] - x[:, 1]  # height
+    return y
+def xywh2xyxy(x):
+    # Convert nx4 boxes from [x, y, w, h] to [x1, y1, x2, y2] where xy1=top-left, xy2=bottom-right
+    y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
+    y[:, 0] = x[:, 0] - x[:, 2] / 2  # top left x
+    y[:, 1] = x[:, 1] - x[:, 3] / 2  # top left y
+    y[:, 2] = x[:, 0] + x[:, 2] / 2  # bottom right x
+    y[:, 3] = x[:, 1] + x[:, 3] / 2  # bottom right y
+    return y
+
+def clip_coords(boxes, shape):
+    # Clip bounding xyxy bounding boxes to image shape (height, width)
+    if isinstance(boxes, torch.Tensor):  # faster individually
+        boxes[:, 0].clamp_(0, shape[1])  # x1
+        boxes[:, 1].clamp_(0, shape[0])  # y1
+        boxes[:, 2].clamp_(0, shape[1])  # x2
+        boxes[:, 3].clamp_(0, shape[0])  # y2
+    else:  # np.array (faster grouped)
+        boxes[:, [0, 2]] = boxes[:, [0, 2]].clip(0, shape[1])  # x1, x2
+        boxes[:, [1, 3]] = boxes[:, [1, 3]].clip(0, shape[0])  # y1, y2
+
+def save_one_box_lp1(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True):
+    # Save image crop as {file} with crop size multiple {gain} and {pad} pixels. Save and/or return crop
+    xyxy = torch.tensor(xyxy).view(-1, 4)
+    b = xyxy2xywh(xyxy)  # boxes
+    # print("Hello",b)
+    if square:
+        b[:, 2:] = b[:, 2:].max(1)[0].unsqueeze(1)  # attempt rectangle to square
+    b[:, 2:] = b[:, 2:] * gain + pad  # box wh * gain + pad
+    xyxy = xywh2xyxy(b).long()
+    clip_coords(xyxy, im.shape)
+    crop = im[int(xyxy[0, 1]):int(xyxy[0, 3]), int(xyxy[0, 0]):int(xyxy[0, 2]), ::(1 if BGR else -1)]
+    print("file_name",str(increment_path(file).with_suffix('.jpg')))
+    if save:
+        file.parent.mkdir(parents=True, exist_ok=True)  # make directory
+        file_name = str(increment_path(file).with_suffix('.jpg'))
+        cv2.imwrite(file_name, crop)
+        # print("Hello2",str(increment_path(file).with_suffix('.jpg')), crop)
+        detect_lp(filename=file_name)
+    # return crop
+
+
+
+def detect_lp(filename):
+    print("filename",str(filename))
+    img = cv2.imread(str(filename))
+    plates = yolo_LP_detect(img, size=640)
+    list_plates = plates.pandas().xyxy[0].values.tolist()
+    list_read_plates = set()
+    if len(list_plates) == 0:
+        lp = helper.read_plate(yolo_license_plate, img)
+        if lp != "unknown":
+            # cv2.putText(img, lp, (7, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+            list_read_plates.add(lp)
+    else:
+        for plate in list_plates:
+            flag = 0
+            x = int(plate[0])  # xmin
+            y = int(plate[1])  # ymin
+            w = int(plate[2] - plate[0])  # xmax - xmin
+            h = int(plate[3] - plate[1])  # ymax - ymin
+            crop_img = img[y:y + h, x:x + w]
+            # cv2.rectangle(img, (int(plate[0]), int(plate[1])),
+            #               (int(plate[2]), int(plate[3])), color=(0, 0, 225),
+            #               thickness=2)
+            # cv2.imwrite("crop.jpg", crop_img)
+            # rc_image = cv2.imread("crop.jpg")
+            lp = ""
+            for cc in range(0, 2):
+                for ct in range(0, 2):
+                    lp = helper.read_plate(yolo_license_plate,
+                                           utils_rotate.deskew(crop_img, cc, ct))
+                    if lp != "unknown":
+                        list_read_plates.add(lp)
+                        # cv2.putText(img, lp, (int(plate[0]), int(plate[1] - 10)),
+                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                        flag = 1
+                        break
+                if flag == 1:
+                    break
+    # cv2.imshow('frame', img)
+    print(lp)
+
+def detect_lp2(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True):
+    xyxy = torch.tensor(xyxy).view(-1, 4)
+    b = xyxy2xywh(xyxy)  # boxes
+    # print("Hello",b)
+    if square:
+        b[:, 2:] = b[:, 2:].max(1)[0].unsqueeze(1)  # attempt rectangle to square
+    b[:, 2:] = b[:, 2:] * gain + pad  # box wh * gain + pad
+    xyxy = xywh2xyxy(b).long()
+    clip_coords(xyxy, im.shape)
+    crop = im[int(xyxy[0, 1]):int(xyxy[0, 3]), int(xyxy[0, 0]):int(xyxy[0, 2]), ::(1 if BGR else -1)]
+    print("file_name",str(increment_path(file).with_suffix('.jpg')))
+    if save:
+        file.parent.mkdir(parents=True, exist_ok=True)  # make directory
+        file_name = str(increment_path(file).with_suffix('.jpg'))
+        cv2.imwrite(file_name, crop)
+        # print("Hello2",str(increment_path(file).with_suffix('.jpg')), crop)
+    print("filename",str(file_name))
+    img = cv2.imread(str(file_name))
+    plates = yolo_LP_detect(img, size=640)
+    list_plates = plates.pandas().xyxy[0].values.tolist()
+    list_read_plates = set()
+    if len(list_plates) == 0:
+        lp = helper.read_plate(yolo_license_plate, img)
+        if lp != "unknown":
+            # cv2.putText(img, lp, (7, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+            list_read_plates.add(lp)
+    else:
+        for plate in list_plates:
+            flag = 0
+            x = int(plate[0])  # xmin
+            y = int(plate[1])  # ymin
+            w = int(plate[2] - plate[0])  # xmax - xmin
+            h = int(plate[3] - plate[1])  # ymax - ymin
+            crop_img = img[y:y + h, x:x + w]
+            # cv2.rectangle(img, (int(plate[0]), int(plate[1])),
+            #               (int(plate[2]), int(plate[3])), color=(0, 0, 225),
+            #               thickness=2)
+            # cv2.imwrite("crop.jpg", crop_img)
+            # rc_image = cv2.imread("crop.jpg")
+            lp = ""
+            for cc in range(0, 2):
+                for ct in range(0, 2):
+                    lp = helper.read_plate(yolo_license_plate,
+                                           utils_rotate.deskew(crop_img, cc, ct))
+                    if lp != "unknown":
+                        list_read_plates.add(lp)
+                        # cv2.putText(img, lp, (int(plate[0]), int(plate[1] - 10)),
+                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                        flag = 1
+                        break
+                if flag == 1:
+                    break
+    # cv2.imshow('frame', img)
+    print(lp)
+    return str(lp)
+
 
 class MainWindows(QtWidgets.QWidget, Ui_Form):
 
@@ -105,6 +252,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.stopEvent = threading.Event()
         self.webcam = True
         self.stopEvent.clear()
+
         # self.model = self.model_load(weights=self.model_path,
         #                              device=self.device)
         # todo A device indicating where the model is loaded
@@ -112,6 +260,11 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                                    device='cpu')
 
         self.reset_vid()
+        self.line_thickness = 3
+        self.status_hide_labels = False
+        self.status_hide_conf = False
+        self.status_save_crop = False
+        self.status_license_plate_recogniton = False
 
         self.pushButton_streaming.setEnabled(False)
         self.pushButton_loadmp4.setEnabled(False)
@@ -198,17 +351,18 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
     '''
     def yolo_configuration_settings(self):
         # self.checkBox_Settings.setEnabled(False)
-        number1 = self.lineEdit.text()
-        number2 = self.lineEdit_4.text()
-        number3 = self.lineEdit_2.text()
+        number1 = self.select_input.text()
+        number2 = self.point_A.text()
+        number3 = self.point_D.text()
+        number4 = self.box_thickness.text()
 
         # SelectCamera
-        if self.lineEdit.text() != "":
+        if self.select_input.text() != "":
             try:
                 number1 = int(number1)
                 cap = cv2.VideoCapture(number1, cv2.CAP_DSHOW)
                 if (cap.isOpened()):
-                    self.vid_source = str(self.lineEdit.text())
+                    self.vid_source = str(self.select_input.text())
                 else:
                     QMessageBox.about(self, 'Warning', "Can not detect the camera")
             except Exception:
@@ -216,9 +370,9 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 pass
         else:
             self.vid_source = '0'
-        self.lineEdit.setText(str(self.vid_source))
+        self.select_input.setText(str(self.vid_source))
         #Select GPU
-        if str(self.box_7.currentText()) == 'Graphics Card':
+        if str(self.select_GPU.currentText()) == 'Graphics Card':
             if self.checkGPU:
                 self.device = str('0') #GPU
                 self.deviceName = str('Graphics Card')
@@ -228,30 +382,30 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
             self.device = str('cpu') #CPU
             self.deviceName = str('CPU')
         # Select Object
-        object = str(self.box_8.currentText())
+        object = str(self.choose_object.currentText())
         self.classes = object[0:1]
         #Point Rigth
-        if self.lineEdit_4.text() != "":
+        if self.point_A.text() != "":
             try:
                 number2 = int(number2)
-                self.pointRight = int(self.lineEdit_4.text())
+                self.pointRight = int(self.point_A.text())
             except Exception:
                 QMessageBox.about(self, 'Error', 'Input point rigth can only be number')
                 pass
         else:
             self.pointRight = 250
-        self.lineEdit_4.setText(str(self.pointRight))
+        self.point_A.setText(str(self.pointRight))
         #Point Left
-        if self.lineEdit_2.text() != "":
+        if self.point_D.text() != "":
             try:
                 number3 = int(number3)
-                self.pointLeft = int(self.lineEdit_2.text())
+                self.pointLeft = int(self.point_D.text())
             except Exception:
                 QMessageBox.about(self, 'Error', 'Input point left can only be a number')
                 pass
         else:
             self.pointLeft = 250
-        self.lineEdit_2.setText(str(self.pointLeft))
+        self.point_D.setText(str(self.pointLeft))
 
         # filepath_not_exist = str(self.model_path)
         basename = os.path.basename(self.model_path)
@@ -262,12 +416,36 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
             self.model = self.model_load(weights=str(fileName),
                             device=str(self.device))  #
 
-            # self.model = self.model_load(weights="Recognition-main\model\LP_ocr.pt",
-            #                 device=str(self.device))
             print("Upload model yolo complete:",str(fileName))
             self.textBrowser_pic.setText("Upload model yolo complete")
             self.textBrowser_video.setText("Upload model yolo complete")
             self.pushButton_upload_yolo.setText(basename)
+        # Hide Labels
+        if self.hide_labels.checkState() > 0:
+            self.status_hide_labels = True
+        # Hide Confidences
+        if self.hide_confidences.checkState() > 0:
+
+            self.status_hide_conf = True
+        # Box Thickness
+        if self.box_thickness.text() != "":
+            try:
+                number4 = int(number4)
+                self.line_thickness = int(self.box_thickness.text())
+            except Exception:
+                QMessageBox.about(self, 'Error', 'Input box thickness can only be a number')
+                pass
+        else:
+            self.line_thickness = 1
+        self.box_thickness.setText(str(self.line_thickness))
+
+        # License Plate Recognition
+        if self.license_plate_recogniton.checkState() > 0:
+            self.status_license_plate_recogniton = True
+
+        # Save Image Data
+        if self.save_img_data.checkState() > 0:
+            self.status_save_crop = True
 
         #Show resul
         t= "Cam:"+str(self.vid_source)+"  Yolo Model:"+str(basename)+"  GPU:"+str(self.device)+'\n'+"Object:"+str(object)+"  Point Right:"+str(self.pointRight)+"  Point Left:"+str(self.pointLeft)
@@ -324,9 +502,9 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
     ***Detect pictures***
     '''
     def detect_img(self):
-        self.lineEdit.setText(str(self.vid_source))
-        self.lineEdit_4.setText('0')
-        self.lineEdit_2.setText('0')
+        self.select_input.setText(str(self.vid_source))
+        self.point_A.setText('0')
+        self.point_D.setText('0')
         self.pushButton_upload_yolo.setText(str(os.path.basename(self.model_path)))
 
         model = self.model
@@ -341,15 +519,15 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         view_img = False  # show results
         save_txt = False  # save results to *.txt
         save_conf = False  # save confidences in --save-txt labels
-        save_crop = False  # save cropped prediction boxes
+        save_crop = self.status_save_crop  # save cropped prediction boxes
         nosave = False  # do not save images/videos
         classes = int(self.classes)  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms = False  # class-agnostic NMS
         augment = False  # ugmented inference
         visualize = False  # visualize features
-        line_thickness = 3  # bounding box thickness (pixels)
-        hide_labels = False  # hide labels
-        hide_conf = False  # hide confidences
+        line_thickness = self.line_thickness  # bounding bo thickness (pixels)
+        hide_labels = self.status_hide_labels  # hide labels
+        hide_conf = self.status_hide_conf  # hide confidences
         half = False  # use FP16 half-precision inference
         dnn = False  # use OpenCV DNN for ONNX inference
         print(source)
@@ -420,7 +598,6 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
                         # Write results
                         count_object = 0
-                        name = 0
                         for *xyxy, conf, cls in reversed(det):
                             count_object= count_object + 1
                             if save_txt:  # Write to file
@@ -429,8 +606,6 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                                 line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
                                 # with open(txt_path + '.txt', 'a') as f:
                                 #     f.write(('%g ' * len(line)).rstrip() % line + '\n')
-                            save_crop=1;
-
                             if save_img or save_crop or view_img:  # Add bbox to image
                                 c = int(cls)  # integer class
                                 # label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
@@ -446,54 +621,9 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                                                           exist_ok=True)  # increment run
                                 save_dir.mkdir(parents=True, exist_ok=True)  # make dir
                                 if save_crop:
-                                    save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
+                                    save_one_box_lp1(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
                                                  BGR=True)
-                                    name = name + 1
-
-                                    if name == 1:
-                                        name1 = str("Sample_OutPut\exp\crops\motorcycle/"+ f'{p.stem}.jpg')
-                                    else:
-                                        name1 = str(
-                                            "Sample_OutPut\exp\crops\motorcycle/" + f'{p.stem}' + str(name) + ".jpg")
-                                    print("KIEB:",name1 )
-                                    img = cv2.imread(name1)
-                                    plates = yolo_LP_detect(img, size=640)
-                                    list_plates = plates.pandas().xyxy[0].values.tolist()
-                                    list_read_plates = set()
-                                    if len(list_plates) == 0:
-                                        lp = helper.read_plate(yolo_license_plate, img)
-                                        if lp != "unknown":
-                                            # cv2.putText(img, lp, (7, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
-                                            list_read_plates.add(lp)
-                                    else:
-                                        for plate in list_plates:
-                                            flag = 0
-                                            x = int(plate[0])  # xmin
-                                            y = int(plate[1])  # ymin
-                                            w = int(plate[2] - plate[0])  # xmax - xmin
-                                            h = int(plate[3] - plate[1])  # ymax - ymin
-                                            crop_img = img[y:y + h, x:x + w]
-                                            # cv2.rectangle(img, (int(plate[0]), int(plate[1])),
-                                            #               (int(plate[2]), int(plate[3])), color=(0, 0, 225),
-                                            #               thickness=2)
-                                            # cv2.imwrite("crop.jpg", crop_img)
-                                            # rc_image = cv2.imread("crop.jpg")
-                                            lp = ""
-                                            for cc in range(0, 2):
-                                                for ct in range(0, 2):
-                                                    lp = helper.read_plate(yolo_license_plate,
-                                                                           utils_rotate.deskew(crop_img, cc, ct))
-                                                    if lp != "unknown":
-                                                        list_read_plates.add(lp)
-                                                        # cv2.putText(img, lp, (int(plate[0]), int(plate[1] - 10)),
-                                                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
-                                                        flag = 1
-                                                        break
-                                                if flag == 1:
-                                                    break
-                                    # cv2.imshow('frame', img)
-                                    print(lp)
-                    # Print time (inference-only)
+                                    # Print time (inference-only)
                     LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
                     # Stream results
                     im0 = annotator.result()
@@ -604,44 +734,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
     '''
 
     # The main functions of the video and the camera are the same, but the incoming source is different.
-    def detect_lp(self):
-        img = cv2.imread(self.filename)
-        plates = yolo_LP_detect(img, size=640)
-        list_plates = plates.pandas().xyxy[0].values.tolist()
-        list_read_plates = set()
-        if len(list_plates) == 0:
-            lp = helper.read_plate(yolo_license_plate, img)
-            if lp != "unknown":
-                # cv2.putText(img, lp, (7, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
-                list_read_plates.add(lp)
-        else:
-            for plate in list_plates:
-                flag = 0
-                x = int(plate[0])  # xmin
-                y = int(plate[1])  # ymin
-                w = int(plate[2] - plate[0])  # xmax - xmin
-                h = int(plate[3] - plate[1])  # ymax - ymin
-                crop_img = img[y:y + h, x:x + w]
-                # cv2.rectangle(img, (int(plate[0]), int(plate[1])),
-                #               (int(plate[2]), int(plate[3])), color=(0, 0, 225),
-                #               thickness=2)
-                # cv2.imwrite("crop.jpg", crop_img)
-                # rc_image = cv2.imread("crop.jpg")
-                lp = ""
-                for cc in range(0, 2):
-                    for ct in range(0, 2):
-                        lp = helper.read_plate(yolo_license_plate,
-                                               utils_rotate.deskew(crop_img, cc, ct))
-                        if lp != "unknown":
-                            list_read_plates.add(lp)
-                            # cv2.putText(img, lp, (int(plate[0]), int(plate[1] - 10)),
-                            #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
-                            flag = 1
-                            break
-                    if flag == 1:
-                        break
-        # cv2.imshow('frame', img)
-        print(lp)
+
 
     def detect_vid(self):
         # pass
@@ -649,8 +742,8 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.buttonUpdateSettings.setEnabled(False)
         # self.lineEdit.setText(str(self.vid_source)) #CAM
         self.pushButton_upload_yolo.setText(str(os.path.basename(self.model_path))) #Model Yolo
-        self.lineEdit_4.setText(str(self.pointRight)) #Point Right
-        self.lineEdit_2.setText(str(self.pointLeft)) #Point Left
+        self.point_A.setText(str(self.pointRight)) #Point Right
+        self.point_D.setText(str(self.pointLeft)) #Point Left
 
 
 
@@ -666,15 +759,15 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         view_img = False  # show results
         save_txt = False  # save results to *.txt
         save_conf = False  # save confidences in --save-txt labels
-        save_crop = False  # save cropped prediction boxes
+        save_crop = self.status_save_crop  # save cropped prediction boxes
         nosave = False  # do not save images/videos
         classes = int(self.classes) #None  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms = False  # class-agnostic NMS
         augment = False  # ugmented inference
         visualize = False  # visualize features
-        line_thickness = 3  # bounding box thickness (pixels)
-        hide_labels = False  # hide labels
-        hide_conf = False  # hide confidences
+        line_thickness = int(self.line_thickness)  # bounding box thickness (pixels)
+        hide_labels = self.status_hide_labels  # hide labels
+        hide_conf = self.status_hide_conf  # hide confidences
         half = False  # use FP16 half-precision inference
         dnn = False  # use OpenCV DNN for ONNX inference
         source = str(self.vid_source)
@@ -763,6 +856,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
                 cv2.imwrite("images/tmp/single_org_vid.jpg", im0)
                 annotator = Annotator(im0, line_width=line_thickness, example=str(names))
+                print("TE",str(names));
 
                 w, h = im0.shape[1], im0.shape[0]##K
                 if det is not None and len(det):
@@ -794,11 +888,13 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             #count
                             count_obj(bboxes,w,h,id)
                             c = int(cls)  # integer class
+                            print('x',c)
                             # TODO show text 'car 0.....'
                             # label = f'{id} {names[c]} {conf:.2f}'
-                            # annotator.box_label(bboxes, label, color=colors(c, True))
-
                             annotator.box_label(bboxes, color=colors(c, True))
+
+                            if c == 2 or c==3:
+                                print("BSX")
 
                             # if save_txt:
                             #     # to MOT format
@@ -826,9 +922,10 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
                             # with open(txt_path + '.txt', 'a') as f:
                             #     f.write(('%g ' * len(line)).rstrip() % line + '\n')
-                        save_crop = 1
-                        if save_img or save_crop or view_img:  # Add bbox to image
+
+                        if save_img or save_crop or view_img or self.status_license_plate_recogniton:  # Add bbox to image
                             c = int(cls)  # integer class
+                            # label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                             label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                             str_box = annotator.box_label(xyxy, label, color=colors(c, True))
                             t = str(xyxy)
@@ -837,9 +934,11 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                                 f.write(t+"\n")
 
                             # self.textBrowser_video.setText(str(count)) ###Loi in hear
-
-                            if save_crop:
-                                save_one_box_lp(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
+                            if self.status_license_plate_recogniton:
+                                self.textBrowser_video.setText(detect_lp2(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
+                                             BGR=True))
+                            if save_crop and self.status_license_plate_recogniton != 1:
+                                save_one_box_lp1(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
                                              BGR=True)
 
                                 # print("save:",f'{p.stem}.jpg')
@@ -850,7 +949,6 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
                 # Stream results
                 # Save results (image with detections)
-
                 im0 = annotator.result()
                 frame = im0
                 resize_scale = output_size / frame.shape[0]
@@ -862,12 +960,12 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 color = (0, 255, 0)
                 thickness = 3
                 frame_resized = cv2.putText(im0, str(count), org, font,
-                            fontScale, color, thickness, cv2.LINE_AA)
+                            fontScale, color, thickness, cv2.LINE_4)
 
                 color = (0, 255, 0)
                 start_point = (0, h - int(self.pointRight))
                 end_point = (w, h - int(self.pointLeft))
-                frame_resized = cv2.line(im0, start_point, end_point, color, thickness=1)
+                frame_resized = cv2.line(im0, start_point, end_point, color, thickness=line_thickness)
 
                 cv2.imwrite("images/tmp/single_result_vid.jpg", frame_resized)
                 if self.checkBox_circle.checkState() > 0:

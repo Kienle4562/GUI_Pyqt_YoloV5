@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>944</width>
-    <height>811</height>
+    <width>1130</width>
+    <height>895</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,33 +24,56 @@
      </property>
      <item>
       <widget class="QGroupBox" name="groupBox_3">
+       <property name="font">
+        <font>
+         <family>UTM Avo</family>
+         <pointsize>9</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
+        </font>
+       </property>
        <property name="title">
         <string>Serial Port</string>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_9">
         <item>
          <widget class="QTabWidget" name="tabWidget">
+          <property name="font">
+           <font>
+            <pointsize>9</pointsize>
+           </font>
+          </property>
           <property name="currentIndex">
            <number>0</number>
           </property>
-          <widget class="QWidget" name="tab_5">
+          <widget class="QWidget" name="tab_Yolo_Configuration">
            <attribute name="title">
             <string>Yolo Configuration</string>
            </attribute>
            <layout class="QHBoxLayout" name="horizontalLayout_Y3">
             <item>
-             <layout class="QFormLayout" name="formLayout_Y3">
+             <layout class="QFormLayout" name="formLayoutYolo">
               <item row="0" column="0">
-               <widget class="QLabel" name="lb_Y1">
+               <widget class="QLabel" name="labe_select_input">
+                <property name="font">
+                 <font>
+                  <pointsize>9</pointsize>
+                 </font>
+                </property>
                 <property name="text">
                  <string>Select Cam:</string>
                 </property>
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QLineEdit" name="lineEdit">
+               <widget class="QLineEdit" name="select_input">
                 <property name="enabled">
                  <bool>true</bool>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>9</pointsize>
+                 </font>
                 </property>
                 <property name="inputMethodHints">
                  <set>Qt::ImhDigitsOnly</set>
@@ -61,7 +84,12 @@
                </widget>
               </item>
               <item row="1" column="0">
-               <widget class="QLabel" name="lb_Y1_2">
+               <widget class="QLabel" name="label_select_yolo_model">
+                <property name="font">
+                 <font>
+                  <pointsize>9</pointsize>
+                 </font>
+                </property>
                 <property name="text">
                  <string>Select Yolo Model:</string>
                 </property>
@@ -69,20 +97,37 @@
               </item>
               <item row="1" column="1">
                <widget class="QPushButton" name="pushButton_upload_yolo">
+                <property name="font">
+                 <font>
+                  <pointsize>9</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
                 <property name="text">
                  <string>Upload Model</string>
                 </property>
                </widget>
               </item>
               <item row="2" column="0">
-               <widget class="QLabel" name="lb_8">
+               <widget class="QLabel" name="label_select_GPU">
+                <property name="font">
+                 <font>
+                  <pointsize>9</pointsize>
+                 </font>
+                </property>
                 <property name="text">
                  <string>Select GPU:</string>
                 </property>
                </widget>
               </item>
               <item row="2" column="1">
-               <widget class="QComboBox" name="box_7">
+               <widget class="QComboBox" name="select_GPU">
+                <property name="font">
+                 <font>
+                  <pointsize>9</pointsize>
+                 </font>
+                </property>
                 <item>
                  <property name="text">
                   <string>CPU</string>
@@ -96,14 +141,24 @@
                </widget>
               </item>
               <item row="3" column="0">
-               <widget class="QLabel" name="lb_2">
+               <widget class="QLabel" name="label_choose_object">
+                <property name="font">
+                 <font>
+                  <pointsize>9</pointsize>
+                 </font>
+                </property>
                 <property name="text">
                  <string>Choose Object:</string>
                 </property>
                </widget>
               </item>
               <item row="3" column="1">
-               <widget class="QComboBox" name="box_8">
+               <widget class="QComboBox" name="choose_object">
+                <property name="font">
+                 <font>
+                  <pointsize>9</pointsize>
+                 </font>
+                </property>
                 <item>
                  <property name="text">
                   <string>0 People</string>
@@ -127,35 +182,183 @@
                </widget>
               </item>
               <item row="4" column="0">
-               <widget class="QLabel" name="lb_7">
+               <widget class="QLabel" name="label_box_thickness">
+                <property name="font">
+                 <font>
+                  <pointsize>9</pointsize>
+                 </font>
+                </property>
                 <property name="text">
-                 <string>Point Right:</string>
+                 <string>Box Thickness</string>
                 </property>
                </widget>
               </item>
               <item row="4" column="1">
-               <widget class="QLineEdit" name="lineEdit_4">
+               <widget class="QLineEdit" name="box_thickness">
+                <property name="font">
+                 <font>
+                  <pointsize>9</pointsize>
+                 </font>
+                </property>
                 <property name="echoMode">
                  <enum>QLineEdit::Normal</enum>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="0">
-               <widget class="QLabel" name="lb_3">
-                <property name="text">
-                 <string>Point Left:</string>
                 </property>
                </widget>
               </item>
               <item row="5" column="1">
-               <widget class="QLineEdit" name="lineEdit_2">
-                <property name="echoMode">
-                 <enum>QLineEdit::Normal</enum>
-                </property>
-               </widget>
+               <layout class="QGridLayout" name="gridLayout_14">
+                <item row="2" column="0">
+                 <widget class="QLabel" name="label_point_left">
+                  <property name="font">
+                   <font>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>Point Left:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0">
+                 <widget class="QLabel" name="label_point_right">
+                  <property name="font">
+                   <font>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>Point Right:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QLineEdit" name="point_A">
+                  <property name="font">
+                   <font>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="echoMode">
+                   <enum>QLineEdit::Normal</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QLineEdit" name="point_D">
+                  <property name="font">
+                   <font>
+                    <family>UTM Avo</family>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="echoMode">
+                   <enum>QLineEdit::Normal</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="2">
+                 <widget class="QLineEdit" name="point_B">
+                  <property name="font">
+                   <font>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="echoMode">
+                   <enum>QLineEdit::Normal</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="2">
+                 <widget class="QLineEdit" name="point_C">
+                  <property name="font">
+                   <font>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="echoMode">
+                   <enum>QLineEdit::Normal</enum>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </item>
               <item row="6" column="1">
+               <layout class="QGridLayout" name="gridLayout_13">
+                <item row="0" column="1">
+                 <widget class="QCheckBox" name="hide_confidences">
+                  <property name="font">
+                   <font>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="layoutDirection">
+                   <enum>Qt::LeftToRight</enum>
+                  </property>
+                  <property name="text">
+                   <string>Hide Confidences</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0">
+                 <widget class="QCheckBox" name="hide_labels">
+                  <property name="font">
+                   <font>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="layoutDirection">
+                   <enum>Qt::LeftToRight</enum>
+                  </property>
+                  <property name="text">
+                   <string>Hide Labels</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item row="7" column="1">
+               <layout class="QGridLayout" name="gridLayout_15">
+                <item row="0" column="1">
+                 <widget class="QCheckBox" name="save_img_data">
+                  <property name="font">
+                   <font>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="layoutDirection">
+                   <enum>Qt::LeftToRight</enum>
+                  </property>
+                  <property name="text">
+                   <string>Save Image Data</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0">
+                 <widget class="QCheckBox" name="license_plate_recogniton">
+                  <property name="font">
+                   <font>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="layoutDirection">
+                   <enum>Qt::LeftToRight</enum>
+                  </property>
+                  <property name="text">
+                   <string>License Plate Recognition</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item row="8" column="1">
                <widget class="QPushButton" name="buttonUpdateSettings">
+                <property name="font">
+                 <font>
+                  <pointsize>9</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
                 <property name="text">
                  <string>Update Settings</string>
                 </property>
@@ -181,6 +384,12 @@
               </item>
               <item row="0" column="1">
                <widget class="QPushButton" name="box_1">
+                <property name="font">
+                 <font>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
                 <property name="text">
                  <string>Detect Serial Port</string>
                 </property>
@@ -370,8 +579,14 @@
          <height>16777215</height>
         </size>
        </property>
+       <property name="font">
+        <font>
+         <family>UTM Avo</family>
+         <pointsize>9</pointsize>
+        </font>
+       </property>
        <property name="text">
-        <string>Created by ProtoDrive000</string>
+        <string>Created by ProtoDrive</string>
        </property>
        <property name="textFormat">
         <enum>Qt::AutoText</enum>
@@ -388,6 +603,11 @@
       <layout class="QHBoxLayout" name="horizontalLayout_7">
        <item>
         <spacer name="horizontalSpacer">
+         <property name="font">
+          <font>
+           <pointsize>9</pointsize>
+          </font>
+         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -401,6 +621,12 @@
        </item>
        <item>
         <widget class="QCheckBox" name="checkBox_circle">
+         <property name="font">
+          <font>
+           <family>UTM Avo</family>
+           <pointsize>9</pointsize>
+          </font>
+         </property>
          <property name="layoutDirection">
           <enum>Qt::LeftToRight</enum>
          </property>
@@ -413,6 +639,18 @@
      </item>
      <item>
       <widget class="QPushButton" name="open_button">
+       <property name="font">
+        <font>
+         <family>UTM Avo</family>
+         <pointsize>9</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+         <underline>false</underline>
+         <strikeout>false</strikeout>
+         <stylestrategy>PreferDefault</stylestrategy>
+         <kerning>true</kerning>
+        </font>
+       </property>
        <property name="text">
         <string>Open Serial Port</string>
        </property>
@@ -420,20 +658,25 @@
      </item>
      <item>
       <widget class="QGroupBox" name="formGroupBox">
+       <property name="font">
+        <font>
+         <family>UTM Avo</family>
+         <pointsize>9</pointsize>
+        </font>
+       </property>
        <property name="title">
         <string>Serial Port Status</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_3">
         <item row="0" column="0">
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="1">
-           <widget class="QLCDNumber" name="send_lcdNumber"/>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLCDNumber" name="rec_lcdNumber"/>
-          </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_2">
+            <property name="font">
+             <font>
+              <pointsize>9</pointsize>
+             </font>
+            </property>
             <property name="text">
              <string>Has Been Sent:</string>
             </property>
@@ -441,8 +684,31 @@
           </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label">
+            <property name="font">
+             <font>
+              <pointsize>9</pointsize>
+             </font>
+            </property>
             <property name="text">
              <string>Received:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLCDNumber" name="rec_lcdNumber">
+            <property name="font">
+             <font>
+              <pointsize>9</pointsize>
+             </font>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLCDNumber" name="send_lcdNumber">
+            <property name="font">
+             <font>
+              <pointsize>9</pointsize>
+             </font>
             </property>
            </widget>
           </item>
@@ -453,6 +719,12 @@
      </item>
      <item>
       <widget class="QPushButton" name="close_button">
+       <property name="font">
+        <font>
+         <family>UTM Avo</family>
+         <pointsize>9</pointsize>
+        </font>
+       </property>
        <property name="text">
         <string>Close Serial Port</string>
        </property>
@@ -464,6 +736,12 @@
         <layout class="QVBoxLayout" name="verticalLayout_9">
          <item>
           <widget class="QGroupBox" name="verticalGroupBox">
+           <property name="font">
+            <font>
+             <family>UTM Avo</family>
+             <pointsize>9</pointsize>
+            </font>
+           </property>
            <property name="title">
             <string>Reception Area</string>
            </property>
@@ -488,6 +766,11 @@
                 <height>500</height>
                </size>
               </property>
+              <property name="font">
+               <font>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
              </widget>
             </item>
            </layout>
@@ -495,6 +778,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="verticalGroupBox_2">
+           <property name="font">
+            <font>
+             <family>UTM Avo</family>
+             <pointsize>9</pointsize>
+            </font>
+           </property>
            <property name="title">
             <string>Sending Area</string>
            </property>
@@ -519,12 +808,17 @@
                 <height>500</height>
                </size>
               </property>
+              <property name="font">
+               <font>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
               <property name="html">
                <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'SimSun'; font-size:9pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'UTM Avo'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'SimSun';&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
              </widget>
             </item>
@@ -539,6 +833,12 @@ p, li { white-space: pre-wrap; }
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <item>
             <widget class="QCheckBox" name="hex_receive">
+             <property name="font">
+              <font>
+               <family>UTM Avo</family>
+               <pointsize>9</pointsize>
+              </font>
+             </property>
              <property name="text">
               <string>Hex Receive</string>
              </property>
@@ -546,6 +846,14 @@ p, li { white-space: pre-wrap; }
            </item>
            <item>
             <widget class="QPushButton" name="clear_button">
+             <property name="font">
+              <font>
+               <family>UTM Avo</family>
+               <pointsize>9</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Clear</string>
              </property>
@@ -557,6 +865,12 @@ p, li { white-space: pre-wrap; }
           <layout class="QVBoxLayout" name="verticalLayout_6">
            <item>
             <widget class="QCheckBox" name="hex_send">
+             <property name="font">
+              <font>
+               <family>UTM Avo</family>
+               <pointsize>9</pointsize>
+              </font>
+             </property>
              <property name="text">
               <string>Hex Send</string>
              </property>
@@ -564,6 +878,14 @@ p, li { white-space: pre-wrap; }
            </item>
            <item>
             <widget class="QPushButton" name="clear_button_2">
+             <property name="font">
+              <font>
+               <family>UTM Avo</family>
+               <pointsize>9</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Clear</string>
              </property>
@@ -575,6 +897,12 @@ p, li { white-space: pre-wrap; }
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
             <widget class="QCheckBox" name="timer_send_cb">
+             <property name="font">
+              <font>
+               <family>UTM Avo</family>
+               <pointsize>9</pointsize>
+              </font>
+             </property>
              <property name="text">
               <string>Timing Send</string>
              </property>
@@ -584,6 +912,12 @@ p, li { white-space: pre-wrap; }
             <layout class="QHBoxLayout" name="horizontalLayout_5">
              <item>
               <widget class="QLineEdit" name="lineEdit_3">
+               <property name="font">
+                <font>
+                 <family>UTM Avo</family>
+                 <pointsize>9</pointsize>
+                </font>
+               </property>
                <property name="text">
                 <string>1000</string>
                </property>
@@ -594,6 +928,12 @@ p, li { white-space: pre-wrap; }
              </item>
              <item>
               <widget class="QLabel" name="dw">
+               <property name="font">
+                <font>
+                 <family>UTM Avo</family>
+                 <pointsize>9</pointsize>
+                </font>
+               </property>
                <property name="text">
                 <string>ms/s</string>
                </property>
@@ -607,6 +947,14 @@ p, li { white-space: pre-wrap; }
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
             <widget class="QPushButton" name="pushButton">
+             <property name="font">
+              <font>
+               <family>UTM Avo</family>
+               <pointsize>9</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Random Test</string>
              </property>
@@ -614,6 +962,14 @@ p, li { white-space: pre-wrap; }
            </item>
            <item>
             <widget class="QPushButton" name="send_button">
+             <property name="font">
+              <font>
+               <family>UTM Avo</family>
+               <pointsize>9</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Send</string>
              </property>
@@ -629,6 +985,11 @@ p, li { white-space: pre-wrap; }
    </item>
    <item row="0" column="1">
     <widget class="Line" name="line_2">
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
@@ -641,6 +1002,12 @@ p, li { white-space: pre-wrap; }
        <width>600</width>
        <height>0</height>
       </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>UTM Avo</family>
+       <pointsize>9</pointsize>
+      </font>
      </property>
      <property name="currentIndex">
       <number>0</number>
@@ -664,6 +1031,11 @@ p, li { white-space: pre-wrap; }
            <height>166770</height>
           </size>
          </property>
+         <property name="font">
+          <font>
+           <pointsize>9</pointsize>
+          </font>
+         </property>
          <property name="text">
           <string/>
          </property>
@@ -671,6 +1043,11 @@ p, li { white-space: pre-wrap; }
        </item>
        <item>
         <widget class="Line" name="line">
+         <property name="font">
+          <font>
+           <pointsize>9</pointsize>
+          </font>
+         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -680,12 +1057,22 @@ p, li { white-space: pre-wrap; }
         <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
           <widget class="QGroupBox" name="groupBox_2">
+           <property name="font">
+            <font>
+             <pointsize>9</pointsize>
+            </font>
+           </property>
            <property name="title">
             <string>Result Output</string>
            </property>
            <layout class="QGridLayout" name="gridLayout_5">
             <item row="0" column="0">
              <widget class="QLabel" name="textBrowser_video">
+              <property name="font">
+               <font>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
               <property name="text">
                <string/>
               </property>
@@ -698,6 +1085,13 @@ p, li { white-space: pre-wrap; }
           <layout class="QVBoxLayout" name="verticalLayout_12">
            <item>
             <widget class="QPushButton" name="pushButton_streaming">
+             <property name="font">
+              <font>
+               <pointsize>9</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Live Video Streaming</string>
              </property>
@@ -705,6 +1099,13 @@ p, li { white-space: pre-wrap; }
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_loadmp4">
+             <property name="font">
+              <font>
+               <pointsize>9</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Video File</string>
              </property>
@@ -712,6 +1113,13 @@ p, li { white-space: pre-wrap; }
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_stopscan">
+             <property name="font">
+              <font>
+               <pointsize>9</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Stop Detection</string>
              </property>

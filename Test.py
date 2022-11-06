@@ -20,3 +20,7 @@ import function.helper as helper
 # ap = argparse.ArgumentParser()
 # ap.add_argument('-i', '--image', required=True, help='path to input image')
 # args = ap.parse_args()
+
+from Yolo_GUI import detect_lp
+
+detect_lp(filename="1")

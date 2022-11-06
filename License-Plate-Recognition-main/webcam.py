@@ -17,8 +17,8 @@ yolo_license_plate.conf = 0.60
 prev_frame_time = 0
 new_frame_time = 0
 
-# vid = cv2.VideoCapture(0)
-vid = cv2.VideoCapture("D:\GUI_Pyqt5+YoloV5\Test1.mp4")
+vid = cv2.VideoCapture(1)
+# vid = cv2.VideoCapture("D:\GUI_Pyqt5+YoloV5\Test1.mp4")
 while(True):
     ret, frame = vid.read()
     
