@@ -1,5 +1,5 @@
 from datetime import date
-
+from datetime import datetime
 import serial
 import serial.tools.list_ports
 
@@ -22,8 +22,9 @@ import numpy as np
 
 import function.helper as helper
 import function.utils_rotate as utils_rotate
-yolo_LP_detect = torch.hub.load('License-Plate-Recognition-main\yolov5', 'custom', path='License-Plate-Recognition-main\model\LP_detector.pt', force_reload=True, source='local')
-yolo_license_plate = torch.hub.load('License-Plate-Recognition-main\yolov5', 'custom', path='License-Plate-Recognition-main\model\LP_ocr.pt', force_reload=True, source='local')
+
+yolo_LP_detect = torch.hub.load('yolov5', 'custom', path='Model_Yolo\LP_detector.pt', force_reload=True, source='local')
+yolo_license_plate = torch.hub.load('yolov5', 'custom', path='Model_Yolo\LP_ocr.pt', force_reload=True, source='local')
 yolo_license_plate.conf = 0.60
 
 FILE = Path(__file__).resolve()
@@ -36,14 +37,16 @@ from models.common import DetectMultiBackend
 from utils.datasets import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
 from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr,
                            increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh)
-from utils.plots import Annotator, colors, save_one_box, save_one_box_lp
+from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
 
-from deep_sort.utils.parser import get_config##K
-from deep_sort.deep_sort import DeepSort##K
+from deep_sort.utils.parser import get_config  ##K
+from deep_sort.deep_sort import DeepSort  ##K
 from openpyxl import load_workbook
-count = 0 ##K
-data = [] ##K
+
+count = 0  ##K
+data = []  ##K
+
 
 def count_obj(box, w, h, id):
     # print("Tets",box,w,h,id)
@@ -73,6 +76,7 @@ def count_obj(box, w, h, id):
                 ws.cell(row=countA, column=2).value = count
                 wb.save('Test.xlsm')
 
+
 def xyxy2xywh(x):
     # Convert nx4 boxes from [x1, y1, x2, y2] to [x, y, w, h] where xy1=top-left, xy2=bottom-right
     y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
@@ -81,6 +85,8 @@ def xyxy2xywh(x):
     y[:, 2] = x[:, 2] - x[:, 0]  # width
     y[:, 3] = x[:, 3] - x[:, 1]  # height
     return y
+
+
 def xywh2xyxy(x):
     # Convert nx4 boxes from [x, y, w, h] to [x1, y1, x2, y2] where xy1=top-left, xy2=bottom-right
     y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
@@ -89,6 +95,7 @@ def xywh2xyxy(x):
     y[:, 2] = x[:, 0] + x[:, 2] / 2  # bottom right x
     y[:, 3] = x[:, 1] + x[:, 3] / 2  # bottom right y
     return y
+
 
 def clip_coords(boxes, shape):
     # Clip bounding xyxy bounding boxes to image shape (height, width)
@@ -101,6 +108,7 @@ def clip_coords(boxes, shape):
         boxes[:, [0, 2]] = boxes[:, [0, 2]].clip(0, shape[1])  # x1, x2
         boxes[:, [1, 3]] = boxes[:, [1, 3]].clip(0, shape[0])  # y1, y2
 
+
 def save_one_box_lp1(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True):
     # Save image crop as {file} with crop size multiple {gain} and {pad} pixels. Save and/or return crop
     xyxy = torch.tensor(xyxy).view(-1, 4)
@@ -112,19 +120,17 @@ def save_one_box_lp1(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False
     xyxy = xywh2xyxy(b).long()
     clip_coords(xyxy, im.shape)
     crop = im[int(xyxy[0, 1]):int(xyxy[0, 3]), int(xyxy[0, 0]):int(xyxy[0, 2]), ::(1 if BGR else -1)]
-    print("file_name",str(increment_path(file).with_suffix('.jpg')))
+    # print("file_name", str(increment_path(file).with_suffix('.jpg')))
     if save:
         file.parent.mkdir(parents=True, exist_ok=True)  # make directory
         file_name = str(increment_path(file).with_suffix('.jpg'))
         cv2.imwrite(file_name, crop)
         # print("Hello2",str(increment_path(file).with_suffix('.jpg')), crop)
-        detect_lp(filename=file_name)
-    # return crop
+        # return crop
 
 
-
-def detect_lp(filename):
-    print("filename",str(filename))
+def detect_lp(filename,im0,thickness):
+    print("filename", str(filename))
     img = cv2.imread(str(filename))
     plates = yolo_LP_detect(img, size=640)
     list_plates = plates.pandas().xyxy[0].values.tolist()
@@ -132,7 +138,7 @@ def detect_lp(filename):
     if len(list_plates) == 0:
         lp = helper.read_plate(yolo_license_plate, img)
         if lp != "unknown":
-            # cv2.putText(img, lp, (7, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+            cv2.putText(im0, lp, (7, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
             list_read_plates.add(lp)
     else:
         for plate in list_plates:
@@ -141,12 +147,13 @@ def detect_lp(filename):
             y = int(plate[1])  # ymin
             w = int(plate[2] - plate[0])  # xmax - xmin
             h = int(plate[3] - plate[1])  # ymax - ymin
-            crop_img = img[y:y + h, x:x + w]
-            # cv2.rectangle(img, (int(plate[0]), int(plate[1])),
-            #               (int(plate[2]), int(plate[3])), color=(0, 0, 225),
-            #               thickness=2)
+            crop_img = im0[y:y + h, x:x + w]
+            cv2.rectangle(im0, (int(plate[0]), int(plate[1])),
+                          (int(plate[2]), int(plate[3])), color=(0, 0, 225),
+                          thickness=thickness)
             # cv2.imwrite("crop.jpg", crop_img)
             # rc_image = cv2.imread("crop.jpg")
+            print("dt bsx")
             lp = ""
             for cc in range(0, 2):
                 for ct in range(0, 2):
@@ -154,14 +161,15 @@ def detect_lp(filename):
                                            utils_rotate.deskew(crop_img, cc, ct))
                     if lp != "unknown":
                         list_read_plates.add(lp)
-                        # cv2.putText(img, lp, (int(plate[0]), int(plate[1] - 10)),
-                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                        cv2.putText(im0, lp, (int(plate[0]), int(plate[1] - 10)),
+                                    cv2.FONT_ITALIC, thickness/3, (36, 255, 12), thickness)
                         flag = 1
                         break
                 if flag == 1:
                     break
+    cv2.imwrite("images/tmp/single_result.jpg", im0)
+    return str(list_read_plates)
     # cv2.imshow('frame', img)
-    print(lp)
 
 def detect_lp2(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True):
     xyxy = torch.tensor(xyxy).view(-1, 4)
@@ -173,13 +181,13 @@ def detect_lp2(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=
     xyxy = xywh2xyxy(b).long()
     clip_coords(xyxy, im.shape)
     crop = im[int(xyxy[0, 1]):int(xyxy[0, 3]), int(xyxy[0, 0]):int(xyxy[0, 2]), ::(1 if BGR else -1)]
-    print("file_name",str(increment_path(file).with_suffix('.jpg')))
+    print("file_name", str(increment_path(file).with_suffix('.jpg')))
     if save:
         file.parent.mkdir(parents=True, exist_ok=True)  # make directory
         file_name = str(increment_path(file).with_suffix('.jpg'))
         cv2.imwrite(file_name, crop)
         # print("Hello2",str(increment_path(file).with_suffix('.jpg')), crop)
-    print("filename",str(file_name))
+    print("filename", str(file_name))
     img = cv2.imread(str(file_name))
     plates = yolo_LP_detect(img, size=640)
     list_plates = plates.pandas().xyxy[0].values.tolist()
@@ -216,8 +224,78 @@ def detect_lp2(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=
                 if flag == 1:
                     break
     # cv2.imshow('frame', img)
+
     print(lp)
     return str(lp)
+
+
+class detect_lp3(threading.Thread):
+    def __init__(self, xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True):
+        super().__init__()
+        self.xyxy = xyxy  # Initiliaze data for thread
+        self.im = im
+        self.file = file
+        self.gain = gain
+        self.pad = pad
+        self.square = square
+        self.BGR = BGR
+        self.save = save
+
+    def run(self):
+        xyxy = torch.tensor(self.xyxy).view(-1, 4)
+        b = xyxy2xywh(xyxy)  # boxes
+        # print("Hello",b)
+        if self.square:
+            b[:, 2:] = b[:, 2:].max(1)[0].unsqueeze(1)  # attempt rectangle to square
+        b[:, 2:] = b[:, 2:] * self.gain + self.pad  # box wh * gain + pad
+        xyxy = xywh2xyxy(b).long()
+        clip_coords(xyxy, self.im.shape)
+        crop = self.im[int(xyxy[0, 1]):int(xyxy[0, 3]), int(xyxy[0, 0]):int(xyxy[0, 2]), ::(1 if self.BGR else -1)]
+        print("file_name", str(increment_path(self.file).with_suffix('.jpg')))
+        if self.save:
+            self.file.parent.mkdir(parents=True, exist_ok=True)  # make directory
+            file_name = str(increment_path(self.file).with_suffix('.jpg'))
+            cv2.imwrite(file_name, crop)
+            # print("Hello2",str(increment_path(file).with_suffix('.jpg')), crop)
+        print("filename", str(file_name))
+        img = cv2.imread(str(file_name))
+        plates = yolo_LP_detect(img, size=640)
+        list_plates = plates.pandas().xyxy[0].values.tolist()
+        list_read_plates = set()
+        if len(list_plates) == 0:
+            lp = helper.read_plate(yolo_license_plate, img)
+            if lp != "unknown":
+                # cv2.putText(img, lp, (7, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+                list_read_plates.add(lp)
+        else:
+            for plate in list_plates:
+                flag = 0
+                x = int(plate[0])  # xmin
+                y = int(plate[1])  # ymin
+                w = int(plate[2] - plate[0])  # xmax - xmin
+                h = int(plate[3] - plate[1])  # ymax - ymin
+                crop_img = img[y:y + h, x:x + w]
+                # cv2.rectangle(img, (int(plate[0]), int(plate[1])),
+                #               (int(plate[2]), int(plate[3])), color=(0, 0, 225),
+                #               thickness=2)
+                # cv2.imwrite("crop.jpg", crop_img)
+                # rc_image = cv2.imread("crop.jpg")
+                lp = ""
+                for cc in range(0, 2):
+                    for ct in range(0, 2):
+                        lp = helper.read_plate(yolo_license_plate,
+                                               utils_rotate.deskew(crop_img, cc, ct))
+                        if lp != "unknown":
+                            list_read_plates.add(lp)
+                            # cv2.putText(img, lp, (int(plate[0]), int(plate[1] - 10)),
+                            #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+                            flag = 1
+                            break
+                    if flag == 1:
+                        break
+        # cv2.imshow('frame', img)
+        print(lp)
+        return str(lp)
 
 
 class MainWindows(QtWidgets.QWidget, Ui_Form):
@@ -245,7 +323,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.classes = '0'
         self.pointRight = '200'
         self.pointLeft = '200'
-        self.checkGPU=str(torch.cuda.is_available())
+        self.checkGPU = str(torch.cuda.is_available())
         self.model_path = "Model_Yolo/yolov5n.pt"
         # Initialize the video read thread
         self.vid_source = '0'  # The initial setting is the camera
@@ -257,7 +335,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         #                              device=self.device)
         # todo A device indicating where the model is loaded
         self.model = self.model_load(weights="Model_Yolo/yolov5n.pt",
-                                   device='cpu')
+                                     device='cpu')
 
         self.reset_vid()
         self.line_thickness = 3
@@ -273,9 +351,12 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.pushButton_scanpic.setEnabled(False)
         self.pushButton_comparePic.setEnabled(False)
 
+        Statusthread2 = False  # KKK
+
     '''
     ***Model initialization***
     '''
+
     @torch.no_grad()
     def model_load(self, weights="",  # model.pt path(s)
                    device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
@@ -292,9 +373,10 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         if pt:
             model.model.half() if half else model.model.float()
             print("Mode!", weights)
-        print("Model loading is complete!",weights)
+        print("Model loading is complete!", weights)
 
         return model
+
     def reset_vid(self):
         self.pushButton_streaming.setEnabled(True)
         self.pushButton_loadmp4.setEnabled(True)
@@ -303,10 +385,11 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.label_video.setScaledContents(True)
         # self.vid_source = '0'
         self.webcam = True
+
     def init(self):
         # Serial port detection button
         self.box_1.clicked.connect(self.port_check)
-        #pf.test(100,0.3)
+        # pf.test(100,0.3)
         # Serial port information display
         self.box_2.currentTextChanged.connect(self.port_imf)
 
@@ -346,15 +429,18 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
         self.pushButton_upload_yolo.clicked.connect(self.open_model_yolo)
         self.buttonUpdateSettings.clicked.connect(self.yolo_configuration_settings)
+
     '''
     ***Upload image***
     '''
+
     def yolo_configuration_settings(self):
         # self.checkBox_Settings.setEnabled(False)
         number1 = self.select_input.text()
         number2 = self.point_A.text()
         number3 = self.point_D.text()
         number4 = self.box_thickness.text()
+        flag_err = False
 
         # SelectCamera
         if self.select_input.text() != "":
@@ -365,68 +451,31 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                     self.vid_source = str(self.select_input.text())
                 else:
                     QMessageBox.about(self, 'Warning', "Can not detect the camera")
+                    flag_err = True
             except Exception:
                 QMessageBox.about(self, 'Error', 'Input can only be a number \nEx:0 or 1 or...')
+                flag_err = True
                 pass
         else:
             self.vid_source = '0'
         self.select_input.setText(str(self.vid_source))
-        #Select GPU
+
+        # Select GPU
         if str(self.select_GPU.currentText()) == 'Graphics Card':
             if self.checkGPU:
-                self.device = str('0') #GPU
+                self.device = str('0')  # GPU
                 self.deviceName = str('Graphics Card')
             else:
                 QMessageBox.about(self, 'Warning', 'GPU not found. Please use CPU')
+                flag_err = True
         else:
-            self.device = str('cpu') #CPU
+            self.device = str('cpu')  # CPU
             self.deviceName = str('CPU')
+
         # Select Object
         object = str(self.choose_object.currentText())
         self.classes = object[0:1]
-        #Point Rigth
-        if self.point_A.text() != "":
-            try:
-                number2 = int(number2)
-                self.pointRight = int(self.point_A.text())
-            except Exception:
-                QMessageBox.about(self, 'Error', 'Input point rigth can only be number')
-                pass
-        else:
-            self.pointRight = 250
-        self.point_A.setText(str(self.pointRight))
-        #Point Left
-        if self.point_D.text() != "":
-            try:
-                number3 = int(number3)
-                self.pointLeft = int(self.point_D.text())
-            except Exception:
-                QMessageBox.about(self, 'Error', 'Input point left can only be a number')
-                pass
-        else:
-            self.pointLeft = 250
-        self.point_D.setText(str(self.pointLeft))
 
-        # filepath_not_exist = str(self.model_path)
-        basename = os.path.basename(self.model_path)
-        self.pushButton_upload_yolo.setText(str(basename))
-        # Load model #Select Yolo Model
-        fileName = self.model_path
-        if fileName:
-            self.model = self.model_load(weights=str(fileName),
-                            device=str(self.device))  #
-
-            print("Upload model yolo complete:",str(fileName))
-            self.textBrowser_pic.setText("Upload model yolo complete")
-            self.textBrowser_video.setText("Upload model yolo complete")
-            self.pushButton_upload_yolo.setText(basename)
-        # Hide Labels
-        if self.hide_labels.checkState() > 0:
-            self.status_hide_labels = True
-        # Hide Confidences
-        if self.hide_confidences.checkState() > 0:
-
-            self.status_hide_conf = True
         # Box Thickness
         if self.box_thickness.text() != "":
             try:
@@ -434,46 +483,99 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 self.line_thickness = int(self.box_thickness.text())
             except Exception:
                 QMessageBox.about(self, 'Error', 'Input box thickness can only be a number')
+                flag_err = True
                 pass
         else:
             self.line_thickness = 1
         self.box_thickness.setText(str(self.line_thickness))
 
-        # License Plate Recognition
-        if self.license_plate_recogniton.checkState() > 0:
-            self.status_license_plate_recogniton = True
+        # Point Rigth
+        if self.point_A.text() != "":
+            try:
+                number2 = int(number2)
+                self.pointRight = int(self.point_A.text())
+            except Exception:
+                QMessageBox.about(self, 'Error', 'Input point rigth can only be number')
+                flag_err = True
+                pass
+        else:
+            self.pointRight = 250
+        self.point_A.setText(str(self.pointRight))
+        # Point Left
+        if self.point_D.text() != "":
+            try:
+                number3 = int(number3)
+                self.pointLeft = int(self.point_D.text())
+            except Exception:
+                QMessageBox.about(self, 'Error', 'Input point left can only be a number')
+                flag_err = True
+                pass
+        else:
+            self.pointLeft = 250
+        self.point_D.setText(str(self.pointLeft))
 
-        # Save Image Data
-        if self.save_img_data.checkState() > 0:
-            self.status_save_crop = True
-
-        #Show resul
-        t= "Cam:"+str(self.vid_source)+"  Yolo Model:"+str(basename)+"  GPU:"+str(self.device)+'\n'+"Object:"+str(object)+"  Point Right:"+str(self.pointRight)+"  Point Left:"+str(self.pointLeft)
-        self.textBrowser_video.setText(str(t))
-        self.textBrowser_pic.setText(str(t))
-        # Load model
+        # Load model #Select Yolo Model
+        basename = os.path.basename(self.model_path)
+        self.pushButton_upload_yolo.setText(str(basename))
         fileName = self.model_path
-        if fileName:
+        if fileName != "":
             self.model = self.model_load(weights=str(fileName),
                                          device=str(self.device))  #
             print("Upload model yolo complete:", str(fileName))
             self.pushButton_upload_yolo.setText(basename)
-        QMessageBox.about(self, 'Complete', 'Configuration has been updated')
 
-        self.pushButton_streaming.setEnabled(True)
-        self.pushButton_loadmp4.setEnabled(True)
-        self.pushButton_stopscan.setEnabled(True)
-        self.pushButton_loadpic.setEnabled(True)
-        self.pushButton_scanpic.setEnabled(True)
-        self.pushButton_comparePic.setEnabled(True)
+        # Hide Labels
+        if self.hide_labels.checkState() > 0:
+            self.status_hide_labels = True
+        else:
+            self.status_hide_labels = False
+
+        # Hide Confidences
+        if self.hide_confidences.checkState() > 0:
+            self.status_hide_conf = True
+        else:
+            self.status_hide_conf = False
+
+        # License Plate Recognition
+        if self.license_plate_recogniton.checkState() > 0:
+            self.status_license_plate_recogniton = True
+        else:
+            self.status_license_plate_recogniton = False
+
+        # Save Image Data
+        if self.save_img_data.checkState() > 0:
+            self.status_save_crop = True
+        else:
+            self.status_save_crop = False
+
+        # Show result
+        text_br = "Cam:" + str(self.vid_source) + " | Yolo Model:" + str(basename) + " | GPU:" + str(
+            self.deviceName) + " | Object:" + str(object) + '\n' + "Point Right:" + str(
+            self.pointRight) + " | Point Left:" + str(self.pointLeft) + " | Hide Labels:" + str(
+            self.status_hide_labels) + " | Hide Confidences:" + str(
+            self.status_hide_conf) + '\n' + "License Plate Recognition:" + str(
+            self.status_license_plate_recogniton) + " | Save Image Data:" + str(self.status_save_crop)
+
+        self.textBrowser_video.setText(str(text_br))
+        self.textBrowser_pic.setText(str(text_br))
+
+        if not flag_err:
+            QMessageBox.about(self, 'Complete', 'Configuration has been updated')
+
+            self.pushButton_streaming.setEnabled(True)
+            self.pushButton_loadmp4.setEnabled(True)
+            self.pushButton_stopscan.setEnabled(True)
+            self.pushButton_loadpic.setEnabled(True)
+            self.pushButton_scanpic.setEnabled(True)
+            self.pushButton_comparePic.setEnabled(True)
 
     def open_model_yolo(self):
         fileName, fileType = QFileDialog.getOpenFileName(self, 'Choose file', '', '*.pt')
         filepath_not_exist = str(fileName)
-        basename = os.path.basename(filepath_not_exist)
-        self.model_path = fileName
-        if fileName:
-            print("Upload model yolo complete:",str(fileName))
+        basename = os.path.basename(filepath_not_exist)  # basename = name ex: yolov5.pt
+        if fileName != "":
+            self.model_path = fileName
+            print("Upload model yolo complete:", str(fileName))
             self.textBrowser_pic.setText("Upload model yolo complete")
             self.textBrowser_video.setText("Upload model yolo complete")
             self.pushButton_upload_yolo.setText(basename)
@@ -498,9 +600,11 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
             # todo The image on the right is reset after uploading the image，
             self.right_img.setPixmap(QPixmap("images/UI/logo.jpg"))
             self.right_img.setScaledContents(True)
+
     '''
     ***Detect pictures***
     '''
+
     def detect_img(self):
         self.select_input.setText(str(self.vid_source))
         self.point_A.setText('0')
@@ -508,7 +612,6 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.pushButton_upload_yolo.setText(str(os.path.basename(self.model_path)))
 
         model = self.model
-        print("DV:",self.device)
         output_size = self.output_size
         source = self.img2predict  # file/dir/URL/glob, 0 for webcam
         imgsz = 640  # inference size (pixels)
@@ -575,6 +678,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 # Second-stage classifier (optional)
                 # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
                 # Process predictions
+                self.textBrowser_pic.setText("")
                 for i, det in enumerate(pred):  # per image
                     seen += 1
                     if webcam:  # batch_size >= 1
@@ -583,23 +687,22 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                     else:
                         p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
                     p = Path(p)  # to Path
+                    print("pp", p)
                     s += '%gx%g ' % im.shape[2:]  # print string
                     gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
                     imc = im0.copy() if save_crop else im0  # for save_crop
                     annotator = Annotator(im0, line_width=line_thickness, example=str(names))
+                    count_object = 0
                     if len(det):
                         # Rescale boxes from img_size to im0 size
                         det[:, :4] = scale_coords(im.shape[2:], det[:, :4], im0.shape).round()
-
                         # Print results
                         for c in det[:, -1].unique():
                             n = (det[:, -1] == c).sum()  # detections per class
                             s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
-
                         # Write results
-                        count_object = 0
                         for *xyxy, conf, cls in reversed(det):
-                            count_object= count_object + 1
+                            count_object = count_object + 1
                             if save_txt:  # Write to file
                                 xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(
                                     -1).tolist()  # normalized xywh
@@ -608,24 +711,25 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                                 #     f.write(('%g ' * len(line)).rstrip() % line + '\n')
                             if save_img or save_crop or view_img:  # Add bbox to image
                                 c = int(cls)  # integer class
-                                # label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                                # str_box = annotator.box_label(xyxy,label, color=colors(c, True))
-                                str_box = annotator.box_label(xyxy, color=colors(c, True))
+                                label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
+                                str_box = annotator.box_label(xyxy, label, color=colors(c, True))
 
                                 # t = str(xyxy)+str(label)
-                                t = str(xyxy)+" Object has been counted: "+str(count_object)
+                                t = str(label) + " | Object has been counted: " + str(count_object)
                                 with open("temp.txt", "w") as f:
                                     f.write(t + "\n")
-                                self.textBrowser_pic.setText(t)
+                                print("Test")
+                                if not self.status_license_plate_recogniton: self.textBrowser_pic.setText(t)
                                 save_dir = increment_path(Path("Sample_OutPut") / 'exp',
                                                           exist_ok=True)  # increment run
                                 save_dir.mkdir(parents=True, exist_ok=True)  # make dir
                                 if save_crop:
-                                    save_one_box_lp1(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
-                                                 BGR=True)
-                                    # Print time (inference-only)
+                                    save_one_box_lp1(xyxy, imc, file=save_dir / 'crops' / names[
+                                        c] / datetime.now().strftime("%d%m%Y") / f'{names[c] + "_" + datetime.now().strftime("%H%M%S")+"_"}.jpg',
+                                                     BGR=True)
                     LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
                     # Stream results
+                    imlp = annotator.result()
                     im0 = annotator.result()
                     # if view_img:
                     #     cv2.imshow(str(p), im0)
@@ -633,7 +737,18 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                     # Save results (image with detections)
                     resize_scale = output_size / im0.shape[0]
                     im0 = cv2.resize(im0, (0, 0), fx=resize_scale, fy=resize_scale)
-                    cv2.imwrite("images/tmp/single_result.jpg", im0)
+                    # cv2.imwrite("images/tmp/single_result.jpg", im0)
+                    print("oj",count_object)
+                    if count_object <=0: self.textBrowser_pic.setText('Unable to recognize object')
+                    if self.status_license_plate_recogniton and count_object > 1: # Run 1 time
+                        if names[c] == "car" or "motorcycle":
+                            self.textBrowser_pic.setText(str(open("temp.txt", "r").read()) + detect_lp(filename='images/tmp/tmp_upload.jpg',im0 = imlp, thickness=line_thickness))
+                            print("NO")
+                        else:
+                            cv2.imwrite("images/tmp/single_result.jpg", im0)
+                    else:
+                        cv2.imwrite("images/tmp/single_result.jpg", im0)
+
                     # From the current situation, it should only be a problem under ubuntu, but it is complete under windows, so continue
                     if self.checkBox_circle.checkState() > 0:
                         # read input
@@ -651,7 +766,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                         if len(contours) != 0:
                             big_contour = max(contours, key=cv2.contourArea)
                             # fit contour to ellipse and get ellipse center, minor and major diameters and angle in degree
-                            ellipse = cv2.fitEllipse(big_contour)#big_contour)
+                            ellipse = cv2.fitEllipse(big_contour)  # big_contour)
                             (xc, yc), (d1, d2), angle = ellipse
                             # print(xc, yc, d1, d1, angle)
                             # print("big_contour",big_contour)
@@ -681,11 +796,13 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             cv2.imwrite("images/tmp/single_result.jpg", thresh)
                     self.right_img.setPixmap(QPixmap("images/tmp/single_result.jpg"))
                     self.right_img.setScaledContents(True)
+
     # Video detection, the logic is basically the same, there are two functions, namely, the function of detecting the camera and the function of detecting video files, and the function of detecting the camera first。
 
     '''
     ### UI close event ###
     '''
+
     def closeEvent(self, event):
         reply = QMessageBox.question(self,
                                      'Quit',
@@ -728,27 +845,24 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
             th = threading.Thread(target=self.detect_vid)
             th.start()
 
-
     '''
     ### Video start event ###
     '''
 
     # The main functions of the video and the camera are the same, but the incoming source is different.
 
-
     def detect_vid(self):
-        # pass
 
+        global thread2
+        Statusthread2 = False  # KKK
         self.buttonUpdateSettings.setEnabled(False)
         # self.lineEdit.setText(str(self.vid_source)) #CAM
-        self.pushButton_upload_yolo.setText(str(os.path.basename(self.model_path))) #Model Yolo
-        self.point_A.setText(str(self.pointRight)) #Point Right
-        self.point_D.setText(str(self.pointLeft)) #Point Left
-
-
+        self.pushButton_upload_yolo.setText(str(os.path.basename(self.model_path)))  # Model Yolo
+        self.point_A.setText(str(self.pointRight))  # Point Right
+        self.point_D.setText(str(self.pointLeft))  # Point Left
 
         model = self.model
-        print("MD",self.model_path)
+        print("MD", self.model_path)
         output_size = self.output_size
         # source = self.img2predict  # file/dir/URL/glob, 0 for webcam
         imgsz = 640  # inference size (pixels)
@@ -761,7 +875,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         save_conf = False  # save confidences in --save-txt labels
         save_crop = self.status_save_crop  # save cropped prediction boxes
         nosave = False  # do not save images/videos
-        classes = int(self.classes) #None  # filter by class: --class 0, or --class 0 2 3
+        classes = int(self.classes)  # None  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms = False  # class-agnostic NMS
         augment = False  # ugmented inference
         visualize = False  # visualize features
@@ -777,8 +891,8 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         imgsz = check_img_size(imgsz, s=stride)  # check image size
         save_img = not nosave and not source.endswith('.txt')  # save inference images
 
-        config_deepsort = 'deep_sort/configs/deep_sort.yaml'##K
-        deep_sort_model = 'osnet_x0_25'##
+        config_deepsort = 'deep_sort/configs/deep_sort.yaml'  ##K
+        deep_sort_model = 'osnet_x0_25'  ##
 
         project = "runs/track"
         name = 'exp'
@@ -800,13 +914,13 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
             bs = 1  # batch_size
         vid_path, vid_writer = [None] * bs, [None] * bs
         # Run inference
-        cfg = get_config()##K
+        cfg = get_config()  ##K
         cfg.merge_from_file(config_deepsort)
         deepsort = DeepSort(deep_sort_model,
                             max_dist=cfg.DEEPSORT.MAX_DIST,
                             max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
                             max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
-                            use_cuda=True)##K
+                            use_cuda=True)  ##K
 
         device = select_device(device)
         half &= device.type != 'cpu'
@@ -856,9 +970,9 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
                 cv2.imwrite("images/tmp/single_org_vid.jpg", im0)
                 annotator = Annotator(im0, line_width=line_thickness, example=str(names))
-                print("TE",str(names));
+                print("TE", str(names));
 
-                w, h = im0.shape[1], im0.shape[0]##K
+                w, h = im0.shape[1], im0.shape[0]  ##K
                 if det is not None and len(det):
                     # Rescale boxes from img_size to im0 size
                     det[:, :4] = scale_coords(im.shape[2:], det[:, :4], im0.shape).round()
@@ -867,14 +981,14 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                     for c in det[:, -1].unique():
                         n = (det[:, -1] == c).sum()  # detections per class
                         s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
-                    xywhs = xyxy2xywh(det[:, 0:4]) ##K
-                    confs = det[:, 4]##K
-                    clss = det[:, 5]##K
+                    xywhs = xyxy2xywh(det[:, 0:4])  ##K
+                    confs = det[:, 4]  ##K
+                    clss = det[:, 5]  ##K
 
-                    t4 = time_sync() ##K
-                    outputs = deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), im0)##K
-                    t5 = time_sync()##K
-                    dt[3] += t5 - t4##K
+                    t4 = time_sync()  ##K
+                    outputs = deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), im0)  ##K
+                    t5 = time_sync()  ##K
+                    dt[3] += t5 - t4  ##K
 
                     # Implement only det_max with the highest confidence in all annotation boxes
                     MaxConf = []
@@ -885,15 +999,15 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             bboxes = output[0:4]
                             id = output[4]
                             cls = output[5]
-                            #count
-                            count_obj(bboxes,w,h,id)
+                            # count
+                            count_obj(bboxes, w, h, id)
                             c = int(cls)  # integer class
-                            print('x',c)
+                            print('x', c)
                             # TODO show text 'car 0.....'
                             # label = f'{id} {names[c]} {conf:.2f}'
                             annotator.box_label(bboxes, color=colors(c, True))
 
-                            if c == 2 or c==3:
+                            if c == 2 or c == 3:
                                 print("BSX")
 
                             # if save_txt:
@@ -931,20 +1045,24 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             t = str(xyxy)
                             print("lnn:", str(label), str(xyxy));
                             with open("temp.txt", "w") as f:
-                                f.write(t+"\n")
+                                f.write(t + "\n")
 
                             # self.textBrowser_video.setText(str(count)) ###Loi in hear
                             if self.status_license_plate_recogniton:
-                                self.textBrowser_video.setText(detect_lp2(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
-                                             BGR=True))
+                                # thread2 = detect_lp3(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
+                                #              BGR=True)
+                                # thread2.start()
+                                Statusthread2 = True
+                                # self.textBrowser_video.setText(detect_lp2(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
+                                #              BGR=True))
                             if save_crop and self.status_license_plate_recogniton != 1:
                                 save_one_box_lp1(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
-                                             BGR=True)
+                                                 BGR=True)
 
                                 # print("save:",f'{p.stem}.jpg')
                                 # print(xyxy)
                                 # print(imc)
-                #self.label_video.setText(str_box)
+                # self.label_video.setText(str_box)
                 # Print time (inference-only)
                 LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
                 # Stream results
@@ -960,7 +1078,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 color = (0, 255, 0)
                 thickness = 3
                 frame_resized = cv2.putText(im0, str(count), org, font,
-                            fontScale, color, thickness, cv2.LINE_4)
+                                            fontScale, color, thickness, cv2.LINE_4)
 
                 color = (0, 255, 0)
                 start_point = (0, h - int(self.pointRight))
@@ -1013,10 +1131,12 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                         cv2.imwrite("images/tmp/single_result_vid.jpg", result)
                     else:
                         cv2.imwrite("images/tmp/single_result_vid.jpg", thresh)
-                #self.label_video.setPixmap(QPixmap("test.jpg"))
+                # self.label_video.setPixmap(QPixmap("test.jpg"))
                 self.label_video.setPixmap(QPixmap("images/tmp/single_result_vid.jpg"))
                 self.label_video.setScaledContents(True)
-
+                if Statusthread2:
+                    thread2.join()
+                    Statusthread2 = False
                 # self.label_video
                 # if view_img:
                 # cv2.imshow(str(p), im0)
@@ -1094,9 +1214,9 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.lineEdit_3.setEnabled(True)
         # The number of received data and sent data is set to zero
         self.data_num_received = 0
-        #self.lineEdit.setText(str(self.data_num_received))
+        # self.lineEdit.setText(str(self.data_num_received))
         self.data_num_sended = 0
-        #self.lineEdit_2.setText(str(self.data_num_sended))
+        # self.lineEdit_2.setText(str(self.data_num_sended))
         self.rec_lcdNumber.display(self.data_num_received)
         self.send_lcdNumber.display(self.data_num_sended)
         self.formGroupBox.setTitle("Serial Port Status (Closed) ")
@@ -1115,7 +1235,8 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                         try:
                             num = int(input_s[0:2], 16)
                         except ValueError:
-                            QMessageBox.critical(self, 'wrong data', 'Please Enter Hexadecimal Data, Separated By Spaces!')
+                            QMessageBox.critical(self, 'wrong data',
+                                                 'Please Enter Hexadecimal Data, Separated By Spaces!')
                             return None
                         input_s = input_s[2:].strip()
                         send_list.append(num)
@@ -1126,7 +1247,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
                 num = self.ser.write(input_s)
                 self.data_num_sended += num
-                #self.lineEdit_2.setText(str(self.data_num_sended))
+                # self.lineEdit_2.setText(str(self.data_num_sended))
                 self.send_lcdNumber.display(self.data_num_sended)
         else:
             pass
@@ -1153,7 +1274,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
             # Count the number of received characters
             self.data_num_received += num
-            #self.lineEdit.setText(str(self.data_num_received))
+            # self.lineEdit.setText(str(self.data_num_received))
             self.rec_lcdNumber.display(self.data_num_received)
             # Get the text cursor
             textCursor = self.receive_text.textCursor()
