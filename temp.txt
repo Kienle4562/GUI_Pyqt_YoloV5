@@ -1,1 +1,1 @@
-[tensor(92., device='cuda:0'), tensor(68., device='cuda:0'), tensor(266., device='cuda:0'), tensor(455., device='cuda:0')]
+[tensor(1., device='cuda:0'), tensor(723., device='cuda:0'), tensor(357., device='cuda:0'), tensor(1208., device='cuda:0')]

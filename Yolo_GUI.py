@@ -125,6 +125,10 @@ def save_one_box_lp1(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False
         file.parent.mkdir(parents=True, exist_ok=True)  # make directory
         file_name = str(increment_path(file).with_suffix('.jpg'))
         cv2.imwrite(file_name, crop)
+        print("filrnamr",file_name)
+
+        with open("Sample_OutPut\Image_data_management.txt", "a") as f:
+            f.write(file_name + "\n")
         # print("Hello2",str(increment_path(file).with_suffix('.jpg')), crop)
         # return crop
 
@@ -520,7 +524,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         fileName = self.model_path
         if fileName != "":
             self.model = self.model_load(weights=str(fileName),
-                                         device=str(self.device))  #
+                                         device=str(self.device)) #
             print("Upload model yolo complete:", str(fileName))
             self.pushButton_upload_yolo.setText(basename)
 
@@ -687,7 +691,6 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                     else:
                         p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
                     p = Path(p)  # to Path
-                    print("pp", p)
                     s += '%gx%g ' % im.shape[2:]  # print string
                     gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
                     imc = im0.copy() if save_crop else im0  # for save_crop
@@ -718,14 +721,13 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                                 t = str(label) + " | Object has been counted: " + str(count_object)
                                 with open("temp.txt", "w") as f:
                                     f.write(t + "\n")
-                                print("Test")
                                 if not self.status_license_plate_recogniton: self.textBrowser_pic.setText(t)
                                 save_dir = increment_path(Path("Sample_OutPut") / 'exp',
                                                           exist_ok=True)  # increment run
                                 save_dir.mkdir(parents=True, exist_ok=True)  # make dir
                                 if save_crop:
                                     save_one_box_lp1(xyxy, imc, file=save_dir / 'crops' / names[
-                                        c] / datetime.now().strftime("%d%m%Y") / f'{names[c] + "_" + datetime.now().strftime("%H%M%S")+"_"}.jpg',
+                                        c] / datetime.now().strftime("d"+"%d%m%Y") / f'{names[c] + "_" + datetime.now().strftime("%H%M%S")+"_"}.jpg',
                                                      BGR=True)
                     LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
                     # Stream results
@@ -733,17 +735,15 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                     im0 = annotator.result()
                     # if view_img:
                     #     cv2.imshow(str(p), im0)
-                    #     cv2.waitKey(1)  # 1 millisecond
+                    #     cv2.waitKy(1)  # 1 millisecond
                     # Save results (image with detections)
                     resize_scale = output_size / im0.shape[0]
                     im0 = cv2.resize(im0, (0, 0), fx=resize_scale, fy=resize_scale)
                     # cv2.imwrite("images/tmp/single_result.jpg", im0)
-                    print("oj",count_object)
                     if count_object <=0: self.textBrowser_pic.setText('Unable to recognize object')
                     if self.status_license_plate_recogniton and count_object > 1: # Run 1 time
                         if names[c] == "car" or "motorcycle":
                             self.textBrowser_pic.setText(str(open("temp.txt", "r").read()) + detect_lp(filename='images/tmp/tmp_upload.jpg',im0 = imlp, thickness=line_thickness))
-                            print("NO")
                         else:
                             cv2.imwrite("images/tmp/single_result.jpg", im0)
                     else:
@@ -753,13 +753,10 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                     if self.checkBox_circle.checkState() > 0:
                         # read input
                         img = cv2.imread('images/tmp/upload_show_result.jpg')
-
                         # convert to gray
                         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
                         # threshold
                         thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)[1]
-
                         # find largest contour
                         contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                         contours = contours[0] if len(contours) == 2 else contours[1]
@@ -773,11 +770,9 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             # draw ellipse
                             result = img.copy()
                             cv2.ellipse(result, ellipse, (0, 255, 0), 3)
-
                             # draw circle at center
                             xc, yc = ellipse[0]
                             cv2.circle(result, (int(xc), int(yc)), 10, (255, 255, 255), -1)
-
                             # draw vertical line
                             # compute major radius
                             rmajor = max(d1, d2) / 2
@@ -970,8 +965,6 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
                 cv2.imwrite("images/tmp/single_org_vid.jpg", im0)
                 annotator = Annotator(im0, line_width=line_thickness, example=str(names))
-                print("TE", str(names));
-
                 w, h = im0.shape[1], im0.shape[0]  ##K
                 if det is not None and len(det):
                     # Rescale boxes from img_size to im0 size
@@ -1039,7 +1032,6 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
                         if save_img or save_crop or view_img or self.status_license_plate_recogniton:  # Add bbox to image
                             c = int(cls)  # integer class
-                            # label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                             label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                             str_box = annotator.box_label(xyxy, label, color=colors(c, True))
                             t = str(xyxy)
