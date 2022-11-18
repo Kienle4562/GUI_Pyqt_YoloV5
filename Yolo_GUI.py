@@ -5,6 +5,7 @@ import serial.tools.list_ports
 
 from PyQt5 import QtWidgets
 from gui import Ui_Form
+
 import math
 import shutil
 from PyQt5.QtGui import *
@@ -109,7 +110,7 @@ def clip_coords(boxes, shape):
         boxes[:, [1, 3]] = boxes[:, [1, 3]].clip(0, shape[0])  # y1, y2
 
 
-def save_one_box_lp1(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True):
+def save_one_box_img(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True):
     # Save image crop as {file} with crop size multiple {gain} and {pad} pixels. Save and/or return crop
     xyxy = torch.tensor(xyxy).view(-1, 4)
     b = xyxy2xywh(xyxy)  # boxes
@@ -125,15 +126,27 @@ def save_one_box_lp1(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False
         file.parent.mkdir(parents=True, exist_ok=True)  # make directory
         file_name = str(increment_path(file).with_suffix('.jpg'))
         cv2.imwrite(file_name, crop)
-        print("filrnamr",file_name)
 
-        with open("Sample_OutPut\Image_data_management.txt", "a") as f:
-            f.write(file_name + "\n")
-        # print("Hello2",str(increment_path(file).with_suffix('.jpg')), crop)
-        # return crop
+def save_one_box_vid(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True):
+    # Save image crop as {file} with crop size multiple {gain} and {pad} pixels. Save and/or return crop
+    xyxy = torch.tensor(xyxy).view(-1, 4)
+    b = xyxy2xywh(xyxy)  # boxes
+    # print("Hello",b)
+    if square:
+        b[:, 2:] = b[:, 2:].max(1)[0].unsqueeze(1)  # attempt rectangle to square
+    b[:, 2:] = b[:, 2:] * gain + pad  # box wh * gain + pad
+    xyxy = xywh2xyxy(b).long()
+    clip_coords(xyxy, im.shape)
+    crop = im[int(xyxy[0, 1]):int(xyxy[0, 3]), int(xyxy[0, 0]):int(xyxy[0, 2]), ::(1 if BGR else -1)]
+    print("file_name", str(increment_path(file).with_suffix('.jpg')))
+    with open("Sample_OutPut\Image_data_management.txt", "a") as f:
+        f.write(str(increment_path(file).with_suffix('.jpg')) + "\n")
+    if save:
+        file.parent.mkdir(parents=True, exist_ok=True)  # make directory
+        file_name = str(increment_path(file).with_suffix('.jpg'))
+        cv2.imwrite(file_name, crop)
 
-
-def detect_lp(filename,im0,thickness):
+def detect_lp_img(filename, im0, thickness):
     print("filename", str(filename))
     img = cv2.imread(str(filename))
     plates = yolo_LP_detect(img, size=640)
@@ -174,133 +187,63 @@ def detect_lp(filename,im0,thickness):
     cv2.imwrite("images/tmp/single_result.jpg", im0)
     return str(list_read_plates)
     # cv2.imshow('frame', img)
-
-def detect_lp2(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True):
-    xyxy = torch.tensor(xyxy).view(-1, 4)
-    b = xyxy2xywh(xyxy)  # boxes
-    # print("Hello",b)
-    if square:
-        b[:, 2:] = b[:, 2:].max(1)[0].unsqueeze(1)  # attempt rectangle to square
-    b[:, 2:] = b[:, 2:] * gain + pad  # box wh * gain + pad
-    xyxy = xywh2xyxy(b).long()
-    clip_coords(xyxy, im.shape)
-    crop = im[int(xyxy[0, 1]):int(xyxy[0, 3]), int(xyxy[0, 0]):int(xyxy[0, 2]), ::(1 if BGR else -1)]
-    print("file_name", str(increment_path(file).with_suffix('.jpg')))
-    if save:
-        file.parent.mkdir(parents=True, exist_ok=True)  # make directory
-        file_name = str(increment_path(file).with_suffix('.jpg'))
-        cv2.imwrite(file_name, crop)
-        # print("Hello2",str(increment_path(file).with_suffix('.jpg')), crop)
-    print("filename", str(file_name))
-    img = cv2.imread(str(file_name))
-    plates = yolo_LP_detect(img, size=640)
-    list_plates = plates.pandas().xyxy[0].values.tolist()
-    list_read_plates = set()
-    if len(list_plates) == 0:
-        lp = helper.read_plate(yolo_license_plate, img)
-        if lp != "unknown":
-            # cv2.putText(img, lp, (7, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
-            list_read_plates.add(lp)
-    else:
-        for plate in list_plates:
-            flag = 0
-            x = int(plate[0])  # xmin
-            y = int(plate[1])  # ymin
-            w = int(plate[2] - plate[0])  # xmax - xmin
-            h = int(plate[3] - plate[1])  # ymax - ymin
-            crop_img = img[y:y + h, x:x + w]
-            # cv2.rectangle(img, (int(plate[0]), int(plate[1])),
-            #               (int(plate[2]), int(plate[3])), color=(0, 0, 225),
-            #               thickness=2)
-            # cv2.imwrite("crop.jpg", crop_img)
-            # rc_image = cv2.imread("crop.jpg")
-            lp = ""
-            for cc in range(0, 2):
-                for ct in range(0, 2):
-                    lp = helper.read_plate(yolo_license_plate,
-                                           utils_rotate.deskew(crop_img, cc, ct))
-                    if lp != "unknown":
-                        list_read_plates.add(lp)
-                        # cv2.putText(img, lp, (int(plate[0]), int(plate[1] - 10)),
-                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
-                        flag = 1
-                        break
-                if flag == 1:
-                    break
-    # cv2.imshow('frame', img)
-
-    print(lp)
-    return str(lp)
-
-
-class detect_lp3(threading.Thread):
-    def __init__(self, xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True):
-        super().__init__()
-        self.xyxy = xyxy  # Initiliaze data for thread
-        self.im = im
-        self.file = file
-        self.gain = gain
-        self.pad = pad
-        self.square = square
-        self.BGR = BGR
-        self.save = save
-
-    def run(self):
-        xyxy = torch.tensor(self.xyxy).view(-1, 4)
-        b = xyxy2xywh(xyxy)  # boxes
-        # print("Hello",b)
-        if self.square:
-            b[:, 2:] = b[:, 2:].max(1)[0].unsqueeze(1)  # attempt rectangle to square
-        b[:, 2:] = b[:, 2:] * self.gain + self.pad  # box wh * gain + pad
-        xyxy = xywh2xyxy(b).long()
-        clip_coords(xyxy, self.im.shape)
-        crop = self.im[int(xyxy[0, 1]):int(xyxy[0, 3]), int(xyxy[0, 0]):int(xyxy[0, 2]), ::(1 if self.BGR else -1)]
-        print("file_name", str(increment_path(self.file).with_suffix('.jpg')))
-        if self.save:
-            self.file.parent.mkdir(parents=True, exist_ok=True)  # make directory
-            file_name = str(increment_path(self.file).with_suffix('.jpg'))
-            cv2.imwrite(file_name, crop)
-            # print("Hello2",str(increment_path(file).with_suffix('.jpg')), crop)
-        print("filename", str(file_name))
-        img = cv2.imread(str(file_name))
-        plates = yolo_LP_detect(img, size=640)
-        list_plates = plates.pandas().xyxy[0].values.tolist()
-        list_read_plates = set()
-        if len(list_plates) == 0:
-            lp = helper.read_plate(yolo_license_plate, img)
-            if lp != "unknown":
-                # cv2.putText(img, lp, (7, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
-                list_read_plates.add(lp)
-        else:
-            for plate in list_plates:
-                flag = 0
-                x = int(plate[0])  # xmin
-                y = int(plate[1])  # ymin
-                w = int(plate[2] - plate[0])  # xmax - xmin
-                h = int(plate[3] - plate[1])  # ymax - ymin
-                crop_img = img[y:y + h, x:x + w]
-                # cv2.rectangle(img, (int(plate[0]), int(plate[1])),
-                #               (int(plate[2]), int(plate[3])), color=(0, 0, 225),
-                #               thickness=2)
-                # cv2.imwrite("crop.jpg", crop_img)
-                # rc_image = cv2.imread("crop.jpg")
-                lp = ""
-                for cc in range(0, 2):
-                    for ct in range(0, 2):
-                        lp = helper.read_plate(yolo_license_plate,
-                                               utils_rotate.deskew(crop_img, cc, ct))
-                        if lp != "unknown":
-                            list_read_plates.add(lp)
-                            # cv2.putText(img, lp, (int(plate[0]), int(plate[1] - 10)),
-                            #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
-                            flag = 1
-                            break
-                    if flag == 1:
-                        break
-        # cv2.imshow('frame', img)
-        print(lp)
-        return str(lp)
-
+#
+# def detect_lp2(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True):
+#     xyxy = torch.tensor(xyxy).view(-1, 4)
+#     b = xyxy2xywh(xyxy)  # boxes
+#     # print("Hello",b)
+#     if square:
+#         b[:, 2:] = b[:, 2:].max(1)[0].unsqueeze(1)  # attempt rectangle to square
+#     b[:, 2:] = b[:, 2:] * gain + pad  # box wh * gain + pad
+#     xyxy = xywh2xyxy(b).long()
+#     clip_coords(xyxy, im.shape)
+#     crop = im[int(xyxy[0, 1]):int(xyxy[0, 3]), int(xyxy[0, 0]):int(xyxy[0, 2]), ::(1 if BGR else -1)]
+#     print("file_name", str(increment_path(file).with_suffix('.jpg')))
+#     if save:
+#         file.parent.mkdir(parents=True, exist_ok=True)  # make directory
+#         file_name = str(increment_path(file).with_suffix('.jpg'))
+#         cv2.imwrite(file_name, crop)
+#         # print("Hello2",str(increment_path(file).with_suffix('.jpg')), crop)
+#     print("filename", str(file_name))
+#     img = cv2.imread(str(file_name))
+#     plates = yolo_LP_detect(img, size=640)
+#     list_plates = plates.pandas().xyxy[0].values.tolist()
+#     list_read_plates = set()
+#     if len(list_plates) == 0:
+#         lp = helper.read_plate(yolo_license_plate, img)
+#         if lp != "unknown":
+#             # cv2.putText(img, lp, (7, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+#             list_read_plates.add(lp)
+#     else:
+#         for plate in list_plates:
+#             flag = 0
+#             x = int(plate[0])  # xmin
+#             y = int(plate[1])  # ymin
+#             w = int(plate[2] - plate[0])  # xmax - xmin
+#             h = int(plate[3] - plate[1])  # ymax - ymin
+#             crop_img = img[y:y + h, x:x + w]
+#             # cv2.rectangle(img, (int(plate[0]), int(plate[1])),
+#             #               (int(plate[2]), int(plate[3])), color=(0, 0, 225),
+#             #               thickness=2)
+#             # cv2.imwrite("crop.jpg", crop_img)
+#             # rc_image = cv2.imread("crop.jpg")
+#             lp = ""
+#             for cc in range(0, 2):
+#                 for ct in range(0, 2):
+#                     lp = helper.read_plate(yolo_license_plate,
+#                                            utils_rotate.deskew(crop_img, cc, ct))
+#                     if lp != "unknown":
+#                         list_read_plates.add(lp)
+#                         # cv2.putText(img, lp, (int(plate[0]), int(plate[1] - 10)),
+#                         #             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+#                         flag = 1
+#                         break
+#                 if flag == 1:
+#                     break
+#     # cv2.imshow('frame', img)
+#
+#     print(lp)
+#     return str(lp)
 
 class MainWindows(QtWidgets.QWidget, Ui_Form):
 
@@ -324,7 +267,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.img2predict = ""
         self.device = 'cpu'
         self.deviceName = 'CPU'
-        self.classes = '0'
+        self.classes = [0]
         self.pointRight = '200'
         self.pointLeft = '200'
         self.checkGPU = str(torch.cuda.is_available())
@@ -354,9 +297,6 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.pushButton_loadpic.setEnabled(False)
         self.pushButton_scanpic.setEnabled(False)
         self.pushButton_comparePic.setEnabled(False)
-
-        Statusthread2 = False  # KKK
-
     '''
     ***Model initialization***
     '''
@@ -433,11 +373,9 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
         self.pushButton_upload_yolo.clicked.connect(self.open_model_yolo)
         self.buttonUpdateSettings.clicked.connect(self.yolo_configuration_settings)
-
     '''
     ***Upload image***
     '''
-
     def yolo_configuration_settings(self):
         # self.checkBox_Settings.setEnabled(False)
         number1 = self.select_input.text()
@@ -477,9 +415,15 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
             self.deviceName = str('CPU')
 
         # Select Object
-        object = str(self.choose_object.currentText())
-        self.classes = object[0:1]
-
+        list = self.choose_object.text().split(",")
+        list2 = []
+        for i in range(len(list)):
+            if list[i] != "" and list[i].isnumeric():
+                t = int(list[i])
+                list2.append(t)
+        if list2 == []: list2 = [0]
+        self.classes = list2
+        self.choose_object.setText(str(self.classes).replace("[","").replace(" ","").replace("]",""))
         # Box Thickness
         if self.box_thickness.text() != "":
             try:
@@ -543,8 +487,12 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         # License Plate Recognition
         if self.license_plate_recogniton.checkState() > 0:
             self.status_license_plate_recogniton = True
+            # with open("Sample_OutPut\Image_data_management.txt", "w") as f:
+            #     f.write("LP_On" + "\n")
         else:
             self.status_license_plate_recogniton = False
+            # with open("Sample_OutPut\Image_data_management.txt", "w") as f:
+            #     f.write("LP_Off" + "\n")
 
         # Save Image Data
         if self.save_img_data.checkState() > 0:
@@ -554,7 +502,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
         # Show result
         text_br = "Cam:" + str(self.vid_source) + " | Yolo Model:" + str(basename) + " | GPU:" + str(
-            self.deviceName) + " | Object:" + str(object) + '\n' + "Point Right:" + str(
+            self.deviceName) + " | Object:" + str(self.classes) + '\n' + "Point Right:" + str(
             self.pointRight) + " | Point Left:" + str(self.pointLeft) + " | Hide Labels:" + str(
             self.status_hide_labels) + " | Hide Confidences:" + str(
             self.status_hide_conf) + '\n' + "License Plate Recognition:" + str(
@@ -628,7 +576,8 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         save_conf = False  # save confidences in --save-txt labels
         save_crop = self.status_save_crop  # save cropped prediction boxes
         nosave = False  # do not save images/videos
-        classes = int(self.classes)  # filter by class: --class 0, or --class 0 2 3
+        classes = self.classes  # filter by class: --class 0, or --class 0 2 3
+        print("VYUFKFY",classes)
         agnostic_nms = False  # class-agnostic NMS
         augment = False  # ugmented inference
         visualize = False  # visualize features
@@ -726,9 +675,11 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                                                           exist_ok=True)  # increment run
                                 save_dir.mkdir(parents=True, exist_ok=True)  # make dir
                                 if save_crop:
-                                    save_one_box_lp1(xyxy, imc, file=save_dir / 'crops' / names[
-                                        c] / datetime.now().strftime("d"+"%d%m%Y") / f'{names[c] + "_" + datetime.now().strftime("%H%M%S")+"_"}.jpg',
+                                    save_one_box_img(xyxy, imc, file=save_dir / 'crops' / names[
+                                        c] / datetime.now().strftime(
+                                        "d" + "%d%m%Y") / f'{datetime.now().strftime("%H%M%S") + "_"}.jpg',
                                                      BGR=True)
+
                     LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
                     # Stream results
                     imlp = annotator.result()
@@ -743,7 +694,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                     if count_object <=0: self.textBrowser_pic.setText('Unable to recognize object')
                     if self.status_license_plate_recogniton and count_object > 1: # Run 1 time
                         if names[c] == "car" or "motorcycle":
-                            self.textBrowser_pic.setText(str(open("temp.txt", "r").read()) + detect_lp(filename='images/tmp/tmp_upload.jpg',im0 = imlp, thickness=line_thickness))
+                            self.textBrowser_pic.setText(str(open("temp.txt", "r").read()) + detect_lp_img(filename='images/tmp/tmp_upload.jpg', im0 = imlp, thickness=line_thickness))
                         else:
                             cv2.imwrite("images/tmp/single_result.jpg", im0)
                     else:
@@ -847,9 +798,6 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
     # The main functions of the video and the camera are the same, but the incoming source is different.
 
     def detect_vid(self):
-
-        global thread2
-        Statusthread2 = False  # KKK
         self.buttonUpdateSettings.setEnabled(False)
         # self.lineEdit.setText(str(self.vid_source)) #CAM
         self.pushButton_upload_yolo.setText(str(os.path.basename(self.model_path)))  # Model Yolo
@@ -870,7 +818,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         save_conf = False  # save confidences in --save-txt labels
         save_crop = self.status_save_crop  # save cropped prediction boxes
         nosave = False  # do not save images/videos
-        classes = int(self.classes)  # None  # filter by class: --class 0, or --class 0 2 3
+        classes = self.classes  # None  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms = False  # class-agnostic NMS
         augment = False  # ugmented inference
         visualize = False  # visualize features
@@ -889,7 +837,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         config_deepsort = 'deep_sort/configs/deep_sort.yaml'  ##K
         deep_sort_model = 'osnet_x0_25'  ##
 
-        project = "runs/track"
+        project = "Sample_OutPut"
         name = 'exp'
         exist_ok = False
         save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
@@ -1040,17 +988,17 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                                 f.write(t + "\n")
 
                             # self.textBrowser_video.setText(str(count)) ###Loi in hear
-                            if self.status_license_plate_recogniton:
-                                # thread2 = detect_lp3(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
-                                #              BGR=True)
-                                # thread2.start()
-                                Statusthread2 = True
+                            # if self.status_license_plate_recogniton:
+                            #     with open("Sample_OutPut\Image_data_management.txt", "a") as f:
+                            #         f.write(file_name + "\n")
                                 # self.textBrowser_video.setText(detect_lp2(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
                                 #              BGR=True))
-                            if save_crop and self.status_license_plate_recogniton != 1:
-                                save_one_box_lp1(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
+                            if save_crop and self.status_license_plate_recogniton == False:
+                                print("save")
+                                save_one_box_vid(xyxy, imc, file=save_dir / 'crops' / names[
+                                    c] / datetime.now().strftime(
+                                    "d" + "%d%m%Y") / f'{datetime.now().strftime("%H%M%S") + "_"}.jpg',
                                                  BGR=True)
-
                                 # print("save:",f'{p.stem}.jpg')
                                 # print(xyxy)
                                 # print(imc)
@@ -1126,9 +1074,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 # self.label_video.setPixmap(QPixmap("test.jpg"))
                 self.label_video.setPixmap(QPixmap("images/tmp/single_result_vid.jpg"))
                 self.label_video.setScaledContents(True)
-                if Statusthread2:
-                    thread2.join()
-                    Statusthread2 = False
+
                 # self.label_video
                 # if view_img:
                 # cv2.imshow(str(p), im0)
