@@ -20,7 +20,7 @@ import torch
 import torch.backends.cudnn as cudnn
 import os.path as osp
 import numpy as np
-
+import subprocess
 import function.helper as helper
 import function.utils_rotate as utils_rotate
 
@@ -49,18 +49,17 @@ count = 0  ##K
 data = []  ##K
 
 
-def count_obj(box, w, h, id):
-    # print("Tets",box,w,h,id)
+def count_obj(box, w, h, id, BoxAx , BoxAy, BoxBx, BoxBy):
     global count, data
     today = date.today()
-    # center_coordinates = (int(box[0]+(box[2]-box[0])/2) , int(box[1]+(box[3]-box[1])/2))
-    # print("Test1",(box[1] + (box[3] - box[1]) / 2),":",(h-350))
-    if int(box[1] + (box[3] - box[1]) / 2) > (h - 350):
+    flag = False
+    center_coordinates = (int(box[0]+(box[2]-box[0])/2) , int(box[1]+(box[3]-box[1])/2))
+    if center_coordinates[0] > (BoxAx) and center_coordinates[0] < (BoxBx) and center_coordinates[1] > (BoxAy) and center_coordinates[1] < (BoxBy):
         if id not in data:
+            flag = True
             count += 1
             data.append(id)
             print('count', count)
-
             d1 = today.strftime("%d/%m/%Y")
             wb = load_workbook('Test.xlsm', keep_vba=True)
             sh = wb.active
@@ -76,6 +75,7 @@ def count_obj(box, w, h, id):
                 ws.cell(row=countA, column=1).value = d1
                 ws.cell(row=countA, column=2).value = count
                 wb.save('Test.xlsm')
+    return flag
 
 
 def xyxy2xywh(x):
@@ -127,7 +127,7 @@ def save_one_box_img(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False
         file_name = str(increment_path(file).with_suffix('.jpg'))
         cv2.imwrite(file_name, crop)
 
-def save_one_box_vid(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True):
+def save_one_box_vid(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False, BGR=False, save=True, Oj='', LP=False):
     # Save image crop as {file} with crop size multiple {gain} and {pad} pixels. Save and/or return crop
     xyxy = torch.tensor(xyxy).view(-1, 4)
     b = xyxy2xywh(xyxy)  # boxes
@@ -139,8 +139,10 @@ def save_one_box_vid(xyxy, im, file='image.jpg', gain=1.02, pad=10, square=False
     clip_coords(xyxy, im.shape)
     crop = im[int(xyxy[0, 1]):int(xyxy[0, 3]), int(xyxy[0, 0]):int(xyxy[0, 2]), ::(1 if BGR else -1)]
     print("file_name", str(increment_path(file).with_suffix('.jpg')))
-    with open("Sample_OutPut\Image_data_management.txt", "a") as f:
-        f.write(str(increment_path(file).with_suffix('.jpg')) + "\n")
+    if LP == True and (Oj == 'car' or Oj == 'Car' or Oj == 'truck' or Oj == 'Truck' or Oj == 'motorcycle'or Oj == "Motorcycle" or Oj == 'bus'or Oj == 'Bus'):
+        print("OJ",Oj)
+        with open("Sample_OutPut\Image_data_management.txt", "a") as f:
+            f.write(str(increment_path(file).with_suffix('.jpg')) + "\n")
     if save:
         file.parent.mkdir(parents=True, exist_ok=True)  # make directory
         file_name = str(increment_path(file).with_suffix('.jpg'))
@@ -244,23 +246,68 @@ def detect_lp_img(filename, im0, thickness):
 #
 #     print(lp)
 #     return str(lp)
+path = 'images\ImgDrawCoordinates.jpg'
+PointA = []
+PointB = []
+class DrawCoordinates(QWidget):
+    def __init__(self):
+        super().__init__()
+        im0 = cv2.imread(path)
+        w, h = im0.shape[1], im0.shape[0]
+        self.window_width, self.window_height = w, h
+        print("wh",w,h)
+        self.setMinimumSize(self.window_width, self.window_height)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        self.pix = QPixmap(path)
+        # self.pix.fill(Qt.white)
+        self.begin, self.destination = QPoint(), QPoint()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.drawPixmap(QPoint(), self.pix)
+        if not self.begin.isNull() and not self.destination.isNull():
+            rect = QRect(self.begin, self.destination)
+            painter.drawRect(rect.normalized())
+
+    def mousePressEvent(self, event):
+        global PointA
+        if event.buttons() & Qt.LeftButton:
+            print('Point 1')
+            self.begin = event.pos()
+            self.destination = self.begin
+            self.update()
+            PointA = str(event.pos())[str(event.pos()).find('(')+1: str(event.pos()).find(')')].split(",")
+            print("1", event.pos())
+
+    def mouseMoveEvent(self, event):
+        global PointB
+        if event.buttons() & Qt.LeftButton:
+            print('Point 2')
+            self.destination = event.pos()
+            self.update()
+            PointB = str(event.pos())[str(event.pos()).find('(') + 1: str(event.pos()).find(')')].split(",")
+            print("2", event.pos())
 
 class MainWindows(QtWidgets.QWidget, Ui_Form):
 
     def __init__(self):
         super(MainWindows, self).__init__()
+        self.windowDrawCoordinates = DrawCoordinates()
         self.setupUi(self)
         self.init()
         self.setWindowTitle("Yolo Host Computer")
         self.ser = serial.Serial()
-        self.port_check()
+        # self.port_check()
         self.setWindowIcon(QIcon("images/UI/logo.jpg"))
 
         # The number of received data and sent data is set to zero
-        self.data_num_received = 0
-        self.data_num_sended = 0
-        self.rec_lcdNumber.display(self.data_num_received)
-        self.send_lcdNumber.display(self.data_num_sended)
+        # self.data_num_received = 0
+        # self.data_num_sended = 0
+        # self.rec_lcdNumber.display(self.data_num_received)
+        # self.send_lcdNumber.display(self.data_num_sended)
 
         # Image reading process
         self.output_size = 480
@@ -268,8 +315,11 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.device = 'cpu'
         self.deviceName = 'CPU'
         self.classes = [0]
-        self.pointRight = '200'
-        self.pointLeft = '200'
+
+        self.pointAx = '0'
+        self.pointAy = '200'
+        self.pointBx = '640'
+        self.pointBy = '200'
         self.checkGPU = str(torch.cuda.is_available())
         self.model_path = "Model_Yolo/yolov5n.pt"
         # Initialize the video read thread
@@ -297,9 +347,20 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.pushButton_loadpic.setEnabled(False)
         self.pushButton_scanpic.setEnabled(False)
         self.pushButton_comparePic.setEnabled(False)
+
     '''
     ***Model initialization***
     '''
+    def toggle_windowDrawCoordinates(self, checked):
+        # # Select image config file to read
+        # fileName, fileType = QFileDialog.getOpenFileName(self, 'Choose file', '', '*.jpg *.png *.tif *.jpeg')
+        # if fileName:
+        #     path = fileName
+        if self.windowDrawCoordinates.isVisible():
+            self.windowDrawCoordinates.hide()
+
+        else:
+            self.windowDrawCoordinates.show()
 
     @torch.no_grad()
     def model_load(self, weights="",  # model.pt path(s)
@@ -332,34 +393,34 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
     def init(self):
         # Serial port detection button
-        self.box_1.clicked.connect(self.port_check)
+        # self.box_1.clicked.connect(self.port_check)
         # pf.test(100,0.3)
         # Serial port information display
-        self.box_2.currentTextChanged.connect(self.port_imf)
+        # self.box_2.currentTextChanged.connect(self.port_imf)
 
         # Open serial button
-        self.open_button.clicked.connect(self.port_open)
+        # self.open_button.clicked.connect(self.port_open)
 
         # Close serial button
-        self.close_button.clicked.connect(self.port_close)
+        # self.close_button.clicked.connect(self.port_close)
 
         # Send data button
-        self.send_button.clicked.connect(self.data_send)
+        # self.send_button.clicked.connect(self.data_send)
 
         # Send data regularly
-        self.timer_send = QTimer()
-        self.timer_send.timeout.connect(self.data_send)
-        self.timer_send_cb.stateChanged.connect(self.data_send_timer)
+        # self.timer_send = QTimer()
+        # self.timer_send.timeout.connect(self.data_send)
+        # self.timer_send_cb.stateChanged.connect(self.data_send_timer)
 
         # Timer receives data
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.data_receive)
+        # self.timer = QTimer(self)
+        # self.timer.timeout.connect(self.data_receive)
 
         # Clear send window
-        self.clear_button.clicked.connect(self.send_data_clear)
+        # self.clear_button.clicked.connect(self.send_data_clear)
 
         # Clear receive window
-        self.clear_button.clicked.connect(self.receive_data_clear)
+        # self.clear_button.clicked.connect(self.receive_data_clear)
 
         # Upload image window
         self.pushButton_loadpic.clicked.connect(self.upload_img)
@@ -373,14 +434,19 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
         self.pushButton_upload_yolo.clicked.connect(self.open_model_yolo)
         self.buttonUpdateSettings.clicked.connect(self.yolo_configuration_settings)
+        self.buttonDrawCoordinates.clicked.connect(self.toggle_windowDrawCoordinates)
+
     '''
     ***Upload image***
     '''
     def yolo_configuration_settings(self):
         # self.checkBox_Settings.setEnabled(False)
+        global PointA, PointB
         number1 = self.select_input.text()
-        number2 = self.point_A.text()
-        number3 = self.point_D.text()
+        numberAx = self.point_Ax.text()
+        numberAy = self.point_Ay.text()
+        numberBx = self.point_Bx.text()
+        numberBy = self.point_By.text()
         number4 = self.box_thickness.text()
         flag_err = False
 
@@ -437,30 +503,76 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
             self.line_thickness = 1
         self.box_thickness.setText(str(self.line_thickness))
 
-        # Point Rigth
-        if self.point_A.text() != "":
+        # Point Ax
+        if self.point_Ax.text() != "":
             try:
-                number2 = int(number2)
-                self.pointRight = int(self.point_A.text())
+                numberAx = int(numberAx)
+                self.pointAx = int(self.point_Ax.text())
+                # if len(PointA) < 1: PointA[0] = int(self.point_Ax.text())
             except Exception:
-                QMessageBox.about(self, 'Error', 'Input point rigth can only be number')
+                QMessageBox.about(self, 'Error', 'Input point left(Ax) can only be number')
                 flag_err = True
                 pass
         else:
-            self.pointRight = 250
-        self.point_A.setText(str(self.pointRight))
-        # Point Left
-        if self.point_D.text() != "":
+            self.pointAx = 0
+            # if len(PointA) < 1: PointA[0] = 0
+        self.point_Ax.setText(str(self.pointAx))
+
+        # Point Ay
+        if self.point_Ay.text() != "":
             try:
-                number3 = int(number3)
-                self.pointLeft = int(self.point_D.text())
+                numberAy = int(numberAy)
+                self.pointAy = int(self.point_Ay.text())
+                # if len(PointA) < 2:PointA[1] = int(self.point_Ay.text())
             except Exception:
-                QMessageBox.about(self, 'Error', 'Input point left can only be a number')
+                QMessageBox.about(self, 'Error', 'Input point left(Ax) can only be number')
                 flag_err = True
                 pass
         else:
-            self.pointLeft = 250
-        self.point_D.setText(str(self.pointLeft))
+            self.pointAy = 250
+            # if len(PointA) < 2:PointA[1] = 250
+        self.point_Ay.setText(str(self.pointAy))
+
+        # Point Bx
+        if self.point_Bx.text() != "":
+            try:
+                numberBx = int(numberBx)
+                self.pointBx = int(self.point_Bx.text())
+                # if len(PointB) < 1: PointB[0] = int(self.point_Bx.text())
+            except Exception:
+                QMessageBox.about(self, 'Error', 'Input point right(Bx) can only be a number')
+                flag_err = True
+                pass
+        else:
+            self.pointBx = 640
+            # if len(PointB) < 1: PointB[0] = 640
+        self.point_Bx.setText(str(self.pointBx))
+        # Point By
+        if self.point_By.text() != "":
+            try:
+                numberBy = int(numberBy)
+                self.pointBy = int(self.point_By.text())
+                # if len(PointB) < 2: PointB[1] = int(self.point_By.text())
+            except Exception:
+                QMessageBox.about(self, 'Error', 'Input point right(Bx) can only be a number')
+                flag_err = True
+                pass
+        else:
+            self.pointBy = 250
+            # if len(PointB) < 2: PointB[1] = 250
+        self.point_By.setText(str(self.pointBy))
+
+        # Show pos
+        if PointA and PointB:
+            print("PointAB",PointA,"\n", PointB)
+            self.point_Ax.setText(str(PointA[0]))
+            self.pointAx = int(PointA[0])
+            self.point_Ay.setText(str(PointA[1]))
+            self.pointAy = int(PointA[1])
+            self.point_Bx.setText(str(PointB[0]))
+            self.pointBx = int(PointB[0])
+            self.point_By.setText(str(PointB[1]))
+            self.pointBy = int(PointB[1])
 
         # Load model #Select Yolo Model
         basename = os.path.basename(self.model_path)
@@ -503,11 +615,10 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         # Show result
         text_br = "Cam:" + str(self.vid_source) + " | Yolo Model:" + str(basename) + " | GPU:" + str(
             self.deviceName) + " | Object:" + str(self.classes) + '\n' + "Point Right:" + str(
-            self.pointRight) + " | Point Left:" + str(self.pointLeft) + " | Hide Labels:" + str(
+            self.pointBy) + " | Point Left:" + str(self.pointAy) + " | Hide Labels:" + str(
             self.status_hide_labels) + " | Hide Confidences:" + str(
             self.status_hide_conf) + '\n' + "License Plate Recognition:" + str(
             self.status_license_plate_recogniton) + " | Save Image Data:" + str(self.status_save_crop)
-
         self.textBrowser_video.setText(str(text_br))
         self.textBrowser_pic.setText(str(text_br))
 
@@ -520,6 +631,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
             self.pushButton_loadpic.setEnabled(True)
             self.pushButton_scanpic.setEnabled(True)
             self.pushButton_comparePic.setEnabled(True)
+
 
     def open_model_yolo(self):
         fileName, fileType = QFileDialog.getOpenFileName(self, 'Choose file', '', '*.pt')
@@ -559,8 +671,10 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
     def detect_img(self):
         self.select_input.setText(str(self.vid_source))
-        self.point_A.setText('0')
-        self.point_D.setText('0')
+        self.point_Ax.setText('0')
+        self.point_Ay.setText('0')
+        self.point_Bx.setText('0')
+        self.point_By.setText('0')
         self.pushButton_upload_yolo.setText(str(os.path.basename(self.model_path)))
 
         model = self.model
@@ -577,7 +691,6 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         save_crop = self.status_save_crop  # save cropped prediction boxes
         nosave = False  # do not save images/videos
         classes = self.classes  # filter by class: --class 0, or --class 0 2 3
-        print("VYUFKFY",classes)
         agnostic_nms = False  # class-agnostic NMS
         augment = False  # ugmented inference
         visualize = False  # visualize features
@@ -701,45 +814,45 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                         cv2.imwrite("images/tmp/single_result.jpg", im0)
 
                     # From the current situation, it should only be a problem under ubuntu, but it is complete under windows, so continue
-                    if self.checkBox_circle.checkState() > 0:
-                        # read input
-                        img = cv2.imread('images/tmp/upload_show_result.jpg')
-                        # convert to gray
-                        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                        # threshold
-                        thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)[1]
-                        # find largest contour
-                        contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                        contours = contours[0] if len(contours) == 2 else contours[1]
-                        if len(contours) != 0:
-                            big_contour = max(contours, key=cv2.contourArea)
-                            # fit contour to ellipse and get ellipse center, minor and major diameters and angle in degree
-                            ellipse = cv2.fitEllipse(big_contour)  # big_contour)
-                            (xc, yc), (d1, d2), angle = ellipse
-                            # print(xc, yc, d1, d1, angle)
-                            # print("big_contour",big_contour)
-                            # draw ellipse
-                            result = img.copy()
-                            cv2.ellipse(result, ellipse, (0, 255, 0), 3)
-                            # draw circle at center
-                            xc, yc = ellipse[0]
-                            cv2.circle(result, (int(xc), int(yc)), 10, (255, 255, 255), -1)
-                            # draw vertical line
-                            # compute major radius
-                            rmajor = max(d1, d2) / 2
-                            if angle > 90:
-                                angle = angle - 90
-                            else:
-                                angle = angle + 90
-                            print(angle)
-                            xtop = xc + math.cos(math.radians(angle)) * rmajor
-                            ytop = yc + math.sin(math.radians(angle)) * rmajor
-                            xbot = xc + math.cos(math.radians(angle + 180)) * rmajor
-                            ybot = yc + math.sin(math.radians(angle + 180)) * rmajor
-                            cv2.line(result, (int(xtop), int(ytop)), (int(xbot), int(ybot)), (0, 0, 255), 3)
-                            cv2.imwrite("images/tmp/single_result.jpg", result)
-                        else:
-                            cv2.imwrite("images/tmp/single_result.jpg", thresh)
+                    # if self.checkBox_circle.checkState() > 0:
+                    #     # read input
+                    #     img = cv2.imread('images/tmp/upload_show_result.jpg')
+                    #     # convert to gray
+                    #     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    #     # threshold
+                    #     thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)[1]
+                    #     # find largest contour
+                    #     contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    #     contours = contours[0] if len(contours) == 2 else contours[1]
+                    #     if len(contours) != 0:
+                    #         big_contour = max(contours, key=cv2.contourArea)
+                    #         # fit contour to ellipse and get ellipse center, minor and major diameters and angle in degree
+                    #         ellipse = cv2.fitEllipse(big_contour)  # big_contour)
+                    #         (xc, yc), (d1, d2), angle = ellipse
+                    #         # print(xc, yc, d1, d1, angle)
+                    #         # print("big_contour",big_contour)
+                    #         # draw ellipse
+                    #         result = img.copy()
+                    #         cv2.ellipse(result, ellipse, (0, 255, 0), 3)
+                    #         # draw circle at center
+                    #         xc, yc = ellipse[0]
+                    #         cv2.circle(result, (int(xc), int(yc)), 10, (255, 255, 255), -1)
+                    #         # draw vertical line
+                    #         # compute major radius
+                    #         rmajor = max(d1, d2) / 2
+                    #         if angle > 90:
+                    #             angle = angle - 90
+                    #         else:
+                    #             angle = angle + 90
+                    #         print(angle)
+                    #         xtop = xc + math.cos(math.radians(angle)) * rmajor
+                    #         ytop = yc + math.sin(math.radians(angle)) * rmajor
+                    #         xbot = xc + math.cos(math.radians(angle + 180)) * rmajor
+                    #         ybot = yc + math.sin(math.radians(angle + 180)) * rmajor
+                    #         cv2.line(result, (int(xtop), int(ytop)), (int(xbot), int(ybot)), (0, 0, 255), 3)
+                    #         cv2.imwrite("images/tmp/single_result.jpg", result)
+                    #     else:
+                    #         cv2.imwrite("images/tmp/single_result.jpg", thresh)
                     self.right_img.setPixmap(QPixmap("images/tmp/single_result.jpg"))
                     self.right_img.setScaledContents(True)
 
@@ -801,9 +914,10 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.buttonUpdateSettings.setEnabled(False)
         # self.lineEdit.setText(str(self.vid_source)) #CAM
         self.pushButton_upload_yolo.setText(str(os.path.basename(self.model_path)))  # Model Yolo
-        self.point_A.setText(str(self.pointRight))  # Point Right
-        self.point_D.setText(str(self.pointLeft))  # Point Left
-
+        self.point_Ay.setText(str(self.pointAy))  # Point Right
+        self.point_By.setText(str(self.pointBy))  # Point Left
+        # if self.status_license_plate_recogniton: subprocess.Popen('D:\GUI_Pyqt5_YoloV5\RunLP.bat',
+        #                                                           creationflags=subprocess.CREATE_NEW_CONSOLE)
         model = self.model
         print("MD", self.model_path)
         output_size = self.output_size
@@ -909,11 +1023,11 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 #     '' if dataset.mode == 'image' else f'_{frame}')  # im.txt
                 s += '%gx%g ' % im.shape[2:]  # print string
                 gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
-                imc = im0.copy() if save_crop else im0  # for save_crop
+                imc = im0.copy() if save_crop or self.status_license_plate_recogniton else im0  # for save_crop
 
                 cv2.imwrite("images/tmp/single_org_vid.jpg", im0)
                 annotator = Annotator(im0, line_width=line_thickness, example=str(names))
-                w, h = im0.shape[1], im0.shape[0]  ##K
+                w, h = im0.shape[1], im0.shape[0]  ##Kx
                 if det is not None and len(det):
                     # Rescale boxes from img_size to im0 size
                     det[:, :4] = scale_coords(im.shape[2:], det[:, :4], im0.shape).round()
@@ -941,7 +1055,101 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             id = output[4]
                             cls = output[5]
                             # count
-                            count_obj(bboxes, w, h, id)
+                            if count_obj(bboxes, w, h, id, BoxAx=self.pointAx, BoxAy=self.pointAy, BoxBx=self.pointBx, BoxBy=self.pointBy) and self.status_license_plate_recogniton:
+                            # count_obj(bboxes, w, h, id)
+                            # if self.status_license_plate_recogniton:
+                                if os.stat("dataset_output\List_Result_License_Plate_Recognition.txt").st_size > 0:
+                                    with open("dataset_output\List_Result_License_Plate_Recognition.txt", 'r') as f:
+                                        for countLP, lineLP in enumerate(f):
+                                            pass
+                                    lineLP = countLP + 1
+                                    print('line', lineLP)
+                                    f = open("dataset_output\List_Result_License_Plate_Recognition.txt")
+                                    list_contentLP = f.readlines()
+                                    if lineLP >=1:
+                                        self.label_lp_9.setPixmap(QPixmap(str(list_contentLP[lineLP - 1]).replace("\n","")))
+                                        self.label_lp_9.setScaledContents(True)
+                                        textLP9 = list_contentLP[lineLP - 1].split('/')
+                                        textLP9 = textLP9[2].replace('.jpg','').replace("\n","")
+
+                                        # self.text_label_lp_9.setText(str('textLP9'))
+                                    if lineLP >= 2:
+                                        self.label_lp_8.setPixmap(QPixmap(str(list_contentLP[lineLP - 2].replace("\n",""))))
+                                        self.label_lp_8.setScaledContents(True)
+                                        textLP8 = list_contentLP[lineLP - 2].split('/')
+                                        textLP8 = textLP8[2].replace('.jpg','').replace("\n","")
+
+                                        # self.text_label_lp_8.setText(str('textLP8'))
+
+                                    if lineLP >= 3:
+                                        self.label_lp_7.setPixmap(QPixmap(str(list_contentLP[lineLP - 3].replace("\n",""))))
+                                        self.label_lp_7.setScaledContents(True)
+                                        textLP7 = list_contentLP[lineLP - 3].split('/')
+                                        textLP7 = textLP7[2].replace('.jpg','').replace("\n","")
+
+                                        # self.text_label_lp_7.setText(str('textLP7'))
+                                    if lineLP >= 4:
+                                        self.label_lp_6.setPixmap(QPixmap(str(list_contentLP[lineLP - 4].replace("\n",""))))
+                                        self.label_lp_6.setScaledContents(True)
+                                        textLP6 = list_contentLP[lineLP - 4].split('/')
+                                        textLP6 = textLP6[2].replace('.jpg','').replace("\n","")
+
+                                        # self.text_label_lp_6.setText(str(textLP6))
+                                    if lineLP >= 5:
+                                        self.label_lp_5.setPixmap(QPixmap(str(list_contentLP[lineLP - 5].replace("\n",""))))
+                                        self.label_lp_5.setScaledContents(True)
+                                        textLP5 = list_contentLP[lineLP - 5].split('/')
+                                        textLP5 = textLP5[2].replace('.jpg','').replace("\n","")
+
+                                        # self.text_label_lp_5.setText(str(textLP5))
+                                    if lineLP >= 6:
+                                        self.label_lp_4.setPixmap(QPixmap(str(list_contentLP[lineLP - 6].replace("\n",""))))
+                                        self.label_lp_4.setScaledContents(True)
+                                        textLP4 = list_contentLP[lineLP - 6].split('/')
+                                        textLP4 = textLP4[2].replace('.jpg','').replace("\n","")
+
+                                        # self.text_label_lp_4.setText(str(textLP4))
+                                    if lineLP >= 7:
+                                        self.label_lp_3.setPixmap(QPixmap(str(list_contentLP[lineLP - 7].replace("\n",""))))
+                                        self.label_lp_3.setScaledContents(True)
+                                        textLP3 = list_contentLP[lineLP - 7].split('/')
+                                        textLP3 = textLP3[2].replace('.jpg','').replace("\n","")
+
+                                        # self.text_label_lp_3.setText(str(textLP3))
+                                    if lineLP >= 8:
+                                        self.label_lp_2.setPixmap(QPixmap(str(list_contentLP[lineLP - 8].replace("\n",""))))
+                                        self.label_lp_2.setScaledContents(True)
+                                        textLP2 = list_contentLP[lineLP - 8].split('/')
+                                        textLP2 = textLP2[2].replace('.jpg','').replace("\n","")
+
+                                        # self.text_label_lp_2.setText(str(textLP2))
+                                    if lineLP >= 9:
+                                        self.label_lp_1.setPixmap(QPixmap(str(list_contentLP[lineLP - 9].replace("\n",""))))
+                                        self.label_lp_1.setScaledContents(True)
+                                        textLP1 = list_contentLP[lineLP - 9].split('/')
+                                        textLP1 = textLP1[2].replace('.jpg','').replace("\n","")
+
+                                # self.text_label_lp_9.setText(textLP9)
+                                # self.text_label_lp_8.setText(textLP8)
+                                # self.text_label_lp_7.setText(textLP7)
+                                # self.text_label_lp_6.setText(textLP6)
+                                # self.text_label_lp_5.setText(textLP5)
+                                # self.text_label_lp_4.setText(textLP4)
+                                # self.text_label_lp_3.setText(textLP3)
+                                # self.text_label_lp_2.setText(textLP2)
+                                # self.text_label_lp_1.setText(textLP1)
+                                # self.text_label_lp_2.setText(textLP2)
+                                # self.text_label_lp_3.setText(textLP3)
+
+                                # self.text_label_lp_4.setText(textLP4)
+                                # self.updateLP(textLP9=a, textLP8=a,
+                                #               textLP7=a,
+                                #               textLP6=a, textLP5=a,
+                                #               textLP4=a,
+                                #               textLP3=a, textLP2=a,
+                                #               textLP1=a)
+
+
                             c = int(cls)  # integer class
                             print('x', c)
                             # TODO show text 'car 0.....'
@@ -993,12 +1201,23 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             #         f.write(file_name + "\n")
                                 # self.textBrowser_video.setText(detect_lp2(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg',
                                 #              BGR=True))
-                            if save_crop and self.status_license_plate_recogniton == False:
-                                print("save")
+                            OJ =f'{names[c]}'
+                            if self.status_license_plate_recogniton == True:
+                                if OJ == 'car' or OJ == 'Car' or OJ == 'truck' or OJ == 'Truck' or OJ == 'motorcycle' or OJ == "Motorcycle" or OJ == 'bus' or OJ == 'Bus':
+                                    save_one_box_vid(xyxy, imc, file=save_dir / 'crops' / names[
+                                        c] / datetime.now().strftime(
+                                        "d" + "%d%m%Y") / f'{datetime.now().strftime("%H%M%S") + "_"}.jpg',
+                                                     BGR=True, Oj=OJ, LP=self.status_license_plate_recogniton)
+                                elif  save_crop == True:
+                                    save_one_box_vid(xyxy, imc, file=save_dir / 'crops' / names[
+                                        c] / datetime.now().strftime(
+                                        "d" + "%d%m%Y") / f'{datetime.now().strftime("%H%M%S") + "_"}.jpg',
+                                                     BGR=True, Oj='none', LP=False)
+                            if save_crop == True and self.status_license_plate_recogniton == False:
                                 save_one_box_vid(xyxy, imc, file=save_dir / 'crops' / names[
                                     c] / datetime.now().strftime(
                                     "d" + "%d%m%Y") / f'{datetime.now().strftime("%H%M%S") + "_"}.jpg',
-                                                 BGR=True)
+                                                 BGR=True, Oj = 'none',LP = False)
                                 # print("save:",f'{p.stem}.jpg')
                                 # print(xyxy)
                                 # print(imc)
@@ -1021,56 +1240,61 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                                             fontScale, color, thickness, cv2.LINE_4)
 
                 color = (0, 255, 0)
-                start_point = (0, h - int(self.pointRight))
-                end_point = (w, h - int(self.pointLeft))
-                frame_resized = cv2.line(im0, start_point, end_point, color, thickness=line_thickness)
+                start_point = (int(self.pointAx), int(self.pointAy))
+                print('start_point', start_point)
+                print("hn",h)
+                print("wn", w)
+                end_point = (int(self.pointBx), int(self.pointBy))
+                print("end_point",end_point)
+                # frame_resized = cv2.line(im0, start_point, end_point, color, thickness=line_thickness)
+                frame_resized = cv2.rectangle(im0, start_point, end_point, color, thickness=line_thickness)
 
                 cv2.imwrite("images/tmp/single_result_vid.jpg", frame_resized)
-                if self.checkBox_circle.checkState() > 0:
-                    # read input
-                    img = cv2.imread('images/tmp/single_org_vid.jpg')
-
-                    # convert to gray
-                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-                    # threshold
-                    thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)[1]
-
-                    # find largest contour
-                    contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                    contours = contours[0] if len(contours) == 2 else contours[1]
-                    if len(contours) != 0:
-                        big_contour = max(contours, key=cv2.contourArea)
-                        big_contour
-                        # fit contour to ellipse and get ellipse center, minor and major diameters and angle in degree
-                        ellipse = cv2.fitEllipse(big_contour)
-                        (xc, yc), (d1, d2), angle = ellipse
-                        # print(xc, yc, d1, d1, angle)
-
-                        # draw ellipse
-                        result = img.copy()
-
-                        cv2.ellipse(result, ellipse, (0, 255, 0), 3)
-
-                        # draw circle at center
-                        xc, yc = ellipse[0]
-                        cv2.circle(result, (int(xc), int(yc)), 10, (255, 255, 255), -1)
-                        # draw vertical line
-                        # compute major radius
-                        rmajor = max(d1, d2) / 2
-                        if angle > 90:
-                            angle = angle - 90
-                        else:
-                            angle = angle + 90
-                        # print(angle)
-                        xtop = xc + math.cos(math.radians(angle)) * rmajor
-                        ytop = yc + math.sin(math.radians(angle)) * rmajor
-                        xbot = xc + math.cos(math.radians(angle + 180)) * rmajor
-                        ybot = yc + math.sin(math.radians(angle + 180)) * rmajor
-                        cv2.line(result, (int(xtop), int(ytop)), (int(xbot), int(ybot)), (0, 0, 255), 3)
-                        cv2.imwrite("images/tmp/single_result_vid.jpg", result)
-                    else:
-                        cv2.imwrite("images/tmp/single_result_vid.jpg", thresh)
+                # if self.checkBox_circle.checkState() > 0:
+                #     # read input
+                #     img = cv2.imread('images/tmp/single_org_vid.jpg')
+                #
+                #     # convert to gray
+                #     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                #
+                #     # threshold
+                #     thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)[1]
+                #
+                #     # find largest contour
+                #     contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                #     contours = contours[0] if len(contours) == 2 else contours[1]
+                #     if len(contours) != 0:
+                #         big_contour = max(contours, key=cv2.contourArea)
+                #         big_contour
+                #         # fit contour to ellipse and get ellipse center, minor and major diameters and angle in degree
+                #         ellipse = cv2.fitEllipse(big_contour)
+                #         (xc, yc), (d1, d2), angle = ellipse
+                #         # print(xc, yc, d1, d1, angle)
+                #
+                #         # draw ellipse
+                #         result = img.copy()
+                #
+                #         cv2.ellipse(result, ellipse, (0, 255, 0), 3)
+                #
+                #         # draw circle at center
+                #         xc, yc = ellipse[0]
+                #         cv2.circle(result, (int(xc), int(yc)), 10, (255, 255, 255), -1)
+                #         # draw vertical line
+                #         # compute major radius
+                #         rmajor = max(d1, d2) / 2
+                #         if angle > 90:
+                #             angle = angle - 90
+                #         else:
+                #             angle = angle + 90
+                #         # print(angle)
+                #         xtop = xc + math.cos(math.radians(angle)) * rmajor
+                #         ytop = yc + math.sin(math.radians(angle)) * rmajor
+                #         xbot = xc + math.cos(math.radians(angle + 180)) * rmajor
+                #         ybot = yc + math.sin(math.radians(angle + 180)) * rmajor
+                #         cv2.line(result, (int(xtop), int(ytop)), (int(xbot), int(ybot)), (0, 0, 255), 3)
+                #         cv2.imwrite("images/tmp/single_result_vid.jpg", result)
+                #     else:
+                #         cv2.imwrite("images/tmp/single_result_vid.jpg", thresh)
                 # self.label_video.setPixmap(QPixmap("test.jpg"))
                 self.label_video.setPixmap(QPixmap("images/tmp/single_result_vid.jpg"))
                 self.label_video.setScaledContents(True)
@@ -1089,6 +1313,17 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 break
         # self.reset_vid()
 
+    def updateLP(self,textLP9 = '',textLP8 = '',textLP7 = '',textLP6 = '',textLP5 = '',textLP4 = '',textLP3 = '',textLP2 = '',textLP1 = '',):
+        print('uyghgggggg')
+        self.text_label_lp_9.setText(textLP9)
+        self.text_label_lp_8.setText(textLP8)
+        self.text_label_lp_7.setText(textLP7)
+        self.text_label_lp_6.setText(textLP6)
+        self.text_label_lp_5.setText(textLP5)
+        self.text_label_lp_4.setText(textLP4)
+        self.text_label_lp_3.setText(textLP3)
+        self.text_label_lp_2.setText(textLP2)
+        self.text_label_lp_1.setText(textLP1)
     '''
     ### Video reset event ###
     '''
@@ -1099,16 +1334,16 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
         self.buttonUpdateSettings.setEnabled(True)
 
     # Serial port detection
-    def port_check(self):
-        # Detect all existing serial ports, store the information in a dictionary
-        self.Com_Dict = {}
-        port_list = list(serial.tools.list_ports.comports())
-        self.box_2.clear()
-        for port in port_list:
-            self.Com_Dict["%s" % port[0]] = "%s" % port[1]
-            self.box_2.addItem(port[0])
-        if len(self.Com_Dict) == 0:
-            self.state_label.setText(" No Serial Port")
+    # def port_check(self):
+    #     # Detect all existing serial ports, store the information in a dictionary
+    #     self.Com_Dict = {}
+    #     port_list = list(serial.tools.list_ports.comports())
+    #     self.box_2.clear()
+    #     for port in port_list:
+    #         self.Com_Dict["%s" % port[0]] = "%s" % port[1]
+    #         self.box_2.addItem(port[0])
+    #     if len(self.Com_Dict) == 0:
+    #         self.state_label.setText(" No Serial Port")
 
     # Serial port information
     def port_imf(self):

@@ -1,39 +1,117 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
-from Popup_ChooseOj import Ui_Dialog
+import string
+import sys
+from random import randint
 
-class Ui_MainWindow(object):
-    def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(685, 353)
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
-        self.centralwidget.setObjectName("centralwidget")
-        self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(240, 66, 331, 181))
-        self.label.setObjectName("label")
-        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(280, 300, 200, 27))
-        self.pushButton.setObjectName("pushButton")
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 685, 25))
-        self.menubar.setObjectName("menubar")
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(MainWindow)
-        self.statusbar.setObjectName("statusbar")
-        MainWindow.setStatusBar(self.statusbar)
+from PyQt5.QtWidgets import (
+    QApplication,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QVBoxLayout,
+    QWidget, QFileDialog,
+)
+from PyQt5.QtCore import Qt, QPoint, QRect
+from PyQt5.QtGui import QPixmap, QPainter
 
-        self.retranslateUi(MainWindow)
-        self.pushButton.clicked.connect(MainWindow.dialogbox)
+# global path
+path = 'images\ImgDrawCoordinates.jpg'
+PointA = []
+PointB = []
+def Ch():
+    global path
+    fileName, fileType = QFileDialog.getOpenFileName(None,'Choose file', '', '*.jpg *.png *.tif *.jpeg')
+    if fileName:
+        path = fileName
+        print("filenamr", fileName)
+    return fileName
+class AnotherWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.window_width, self.window_height = 1200, 800
+        self.setMinimumSize(self.window_width, self.window_height)
 
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        # fileName, fileType = QFileDialog.getOpenFileName(self, 'Choose file', '', '*.jpg *.png *.tif *.jpeg')
+        # if fileName:
+        #     path = fileName
+        #     # print(path)
+        # print("filer",path)
+        self.pix = QPixmap(path)
+        # self.pix.fill(Qt.white)
+        self.begin, self.destination = QPoint(), QPoint()
 
-    def retranslateUi(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.drawPixmap(QPoint(), self.pix)
+        if not self.begin.isNull() and not self.destination.isNull():
+            rect = QRect(self.begin, self.destination)
+            painter.drawRect(rect.normalized())
 
-        self.label.setText(_translate("MainWindow",
-            """
-                <p><span style=\" font-size:26pt;\">MainWindow</span></p>
-                <hr> 
-            """))
-        self.pushButton.setText(_translate("MainWindow", "Open a new window"))
+    def mousePressEvent(self, event):
+        global PointA
+        if event.buttons() & Qt.LeftButton:
+            print('Point 1')
+            self.begin = event.pos()
+            self.destination = self.begin
+            self.update()
+            PointA = event.pos()
+            print("1", event.pos())
+
+    def mouseMoveEvent(self, event):
+        global PointB
+        if event.buttons() & Qt.LeftButton:
+            print('Point 2')
+            self.destination = event.pos()
+            self.update()
+            PointB = str(event.pos())[str(event.pos()).find('(')+1: str(event.pos()).find(')')].split(",")
+            print("PointB", PointB)
+            print("PointB2", PointB[0])
+
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.window1 = AnotherWindow()
+        self.window2 = AnotherWindow()
+
+        l = QVBoxLayout()
+        button1 = QPushButton("Push for Window 1")
+        button1.clicked.connect(self.toggle_window1)
+        l.addWidget(button1)
+
+        button2 = QPushButton("Push for Window 2")
+        button2.clicked.connect(self.toggle_window2)
+        l.addWidget(button2)
+
+        w = QWidget()
+        w.setLayout(l)
+        self.setCentralWidget(w)
+
+    def toggle_window1(self, checked):
+        # Select image config file to read
+        # fileName, fileType = QFileDialog.getOpenFileName(self, 'Choose file', '', '*.jpg *.png *.tif *.jpeg')
+        # if fileName:
+        #     path = fileName
+        #     # print(path)
+        #     print("filenamr",fileName)
+        # Ch()
+        if self.window1.isVisible():
+            self.window1.hide()
+
+        else:
+            self.window1.show()
+
+    def toggle_window2(self, checked):
+        if self.window2.isVisible():
+            self.window2.hide()
+
+        else:
+            self.window2.show()
+
+
+app = QApplication(sys.argv)
+w = MainWindow()
+w.show()
+app.exec()
