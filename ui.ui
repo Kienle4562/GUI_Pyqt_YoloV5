@@ -160,22 +160,6 @@
                 </property>
                </widget>
               </item>
-              <item row="3" column="1">
-               <widget class="QLineEdit" name="choose_object">
-                <property name="font">
-                 <font>
-                  <family>UTM Avo</family>
-                  <pointsize>9</pointsize>
-                 </font>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="echoMode">
-                 <enum>QLineEdit::Normal</enum>
-                </property>
-               </widget>
-              </item>
               <item row="4" column="0">
                <widget class="QLabel" name="label_box_thickness">
                 <property name="font">
@@ -204,6 +188,19 @@
               </item>
               <item row="5" column="1">
                <layout class="QGridLayout" name="gridLayout_14">
+                <item row="0" column="2">
+                 <widget class="QLineEdit" name="point_Ay">
+                  <property name="font">
+                   <font>
+                    <family>UTM Avo</family>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="echoMode">
+                   <enum>QLineEdit::Normal</enum>
+                  </property>
+                 </widget>
+                </item>
                 <item row="0" column="0">
                  <widget class="QLabel" name="label_point_left">
                   <property name="font">
@@ -219,32 +216,6 @@
                 </item>
                 <item row="0" column="1">
                  <widget class="QLineEdit" name="point_Ax">
-                  <property name="font">
-                   <font>
-                    <family>UTM Avo</family>
-                    <pointsize>9</pointsize>
-                   </font>
-                  </property>
-                  <property name="echoMode">
-                   <enum>QLineEdit::Normal</enum>
-                  </property>
-                 </widget>
-                </item>
-                <item row="0" column="2">
-                 <widget class="QLineEdit" name="point_Ay">
-                  <property name="font">
-                   <font>
-                    <family>UTM Avo</family>
-                    <pointsize>9</pointsize>
-                   </font>
-                  </property>
-                  <property name="echoMode">
-                   <enum>QLineEdit::Normal</enum>
-                  </property>
-                 </widget>
-                </item>
-                <item row="2" column="1">
-                 <widget class="QLineEdit" name="point_Bx">
                   <property name="font">
                    <font>
                     <family>UTM Avo</family>
@@ -282,9 +253,56 @@
                   </property>
                  </widget>
                 </item>
+                <item row="2" column="1">
+                 <widget class="QLineEdit" name="point_Bx">
+                  <property name="font">
+                   <font>
+                    <family>UTM Avo</family>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="echoMode">
+                   <enum>QLineEdit::Normal</enum>
+                  </property>
+                 </widget>
+                </item>
                </layout>
               </item>
-              <item row="7" column="1">
+              <item row="6" column="1">
+               <layout class="QGridLayout" name="gridLayout_28">
+                <item row="0" column="0">
+                 <widget class="QPushButton" name="buttonUploadFilePicSample">
+                  <property name="font">
+                   <font>
+                    <family>UTM Avo</family>
+                    <pointsize>9</pointsize>
+                    <weight>75</weight>
+                    <bold>true</bold>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>Upload Pic Sample</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QPushButton" name="buttonDrawCoordinates">
+                  <property name="font">
+                   <font>
+                    <family>UTM Avo</family>
+                    <pointsize>9</pointsize>
+                    <weight>75</weight>
+                    <bold>true</bold>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>Draw Coordinates</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item row="8" column="1">
                <layout class="QGridLayout" name="gridLayout_13">
                 <item row="0" column="1">
                  <widget class="QCheckBox" name="hide_confidences">
@@ -320,24 +338,8 @@
                 </item>
                </layout>
               </item>
-              <item row="8" column="1">
+              <item row="9" column="1">
                <layout class="QGridLayout" name="gridLayout_15">
-                <item row="0" column="0">
-                 <widget class="QCheckBox" name="license_plate_recogniton">
-                  <property name="font">
-                   <font>
-                    <family>UTM Avo</family>
-                    <pointsize>9</pointsize>
-                   </font>
-                  </property>
-                  <property name="layoutDirection">
-                   <enum>Qt::LeftToRight</enum>
-                  </property>
-                  <property name="text">
-                   <string>License Plate Recognition</string>
-                  </property>
-                 </widget>
-                </item>
                 <item row="0" column="1">
                  <widget class="QCheckBox" name="save_img_data">
                   <property name="font">
@@ -354,9 +356,25 @@
                   </property>
                  </widget>
                 </item>
+                <item row="0" column="0">
+                 <widget class="QCheckBox" name="license_plate_recogniton">
+                  <property name="font">
+                   <font>
+                    <family>UTM Avo</family>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="layoutDirection">
+                   <enum>Qt::LeftToRight</enum>
+                  </property>
+                  <property name="text">
+                   <string>License Plate Recognition</string>
+                  </property>
+                 </widget>
+                </item>
                </layout>
               </item>
-              <item row="9" column="1">
+              <item row="10" column="1">
                <widget class="QPushButton" name="buttonUpdateSettings">
                 <property name="font">
                  <font>
@@ -367,24 +385,44 @@
                  </font>
                 </property>
                 <property name="text">
-                 <string>Update Settings</string>
+                 <string>--- Update Settings ---</string>
                 </property>
                </widget>
               </item>
-              <item row="6" column="1">
-               <widget class="QPushButton" name="buttonDrawCoordinates">
-                <property name="font">
-                 <font>
-                  <family>UTM Avo</family>
-                  <pointsize>9</pointsize>
-                  <weight>75</weight>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Draw Coordinates</string>
-                </property>
-               </widget>
+              <item row="3" column="1">
+               <layout class="QGridLayout" name="gridLayout_29">
+                <item row="0" column="0">
+                 <widget class="QLineEdit" name="choose_object">
+                  <property name="font">
+                   <font>
+                    <family>UTM Avo</family>
+                    <pointsize>9</pointsize>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                  <property name="echoMode">
+                   <enum>QLineEdit::Normal</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QPushButton" name="buttonShowObjCodesTable">
+                  <property name="font">
+                   <font>
+                    <family>UTM Avo</family>
+                    <pointsize>9</pointsize>
+                    <weight>75</weight>
+                    <bold>true</bold>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>Show Obiect Codes Table</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </item>
              </layout>
             </item>

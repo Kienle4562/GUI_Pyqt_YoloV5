@@ -49,7 +49,7 @@ count = 0  ##K
 data = []  ##K
 
 
-def count_obj(box, w, h, id, BoxAx , BoxAy, BoxBx, BoxBy):
+def count_obj(box, w, h, id, classObj, BoxAx , BoxAy, BoxBx, BoxBy):
     global count, data
     today = date.today()
     flag = False
@@ -60,21 +60,20 @@ def count_obj(box, w, h, id, BoxAx , BoxAy, BoxBx, BoxBy):
             count += 1
             data.append(id)
             print('count', count)
+            now = datetime.now()
             d1 = today.strftime("%d/%m/%Y")
+            current_time = now.strftime("%H:%M:%S")
             wb = load_workbook('Test.xlsm', keep_vba=True)
+            # wb = load_workbook('Test.xlsm', keep_vba=True,data_only=True)
             sh = wb.active
-            ws = wb['My sheet']
-            countA = sh.max_row
-            Day1 = sh.cell(row=countA, column=1).value
-            # print("counta2",countA,"countA:",countA,"day1",Day1,"d",d1)
-            if Day1 == d1:
-                ws.cell(row=countA, column=2).value = count
-                wb.save('Test.xlsm')
-            else:
-                countA += 1
-                ws.cell(row=countA, column=1).value = d1
-                ws.cell(row=countA, column=2).value = count
-                wb.save('Test.xlsm')
+            ws = wb['My_sheet']
+            countA = ws.max_row
+            print('countA',countA)
+            countA += 1
+            ws.cell(row=countA, column=1).value = d1
+            ws.cell(row=countA, column=2).value = current_time
+            ws.cell(row=countA, column=3).value = classObj
+            wb.save('Test.xlsm')
     return flag
 
 
@@ -292,7 +291,6 @@ class DrawCoordinates(QWidget):
             print("2", event.pos())
 
 class MainWindows(QtWidgets.QWidget, Ui_Form):
-
     def __init__(self):
         super(MainWindows, self).__init__()
         self.windowDrawCoordinates = DrawCoordinates()
@@ -351,16 +349,26 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
     '''
     ***Model initialization***
     '''
+    def showObjCodesTable(self, checked):
+        self.label_video.setPixmap(QPixmap("images/ObjCodesTable.jpg"))
+        self.label_video.setScaledContents(True)
+        self.left_img.setPixmap(QPixmap("images/ObjCodesTable.jpg"))
+        self.left_img.setScaledContents(True)
+
     def toggle_windowDrawCoordinates(self, checked):
-        # # Select image config file to read
-        # fileName, fileType = QFileDialog.getOpenFileName(self, 'Choose file', '', '*.jpg *.png *.tif *.jpeg')
-        # if fileName:
-        #     path = fileName
         if self.windowDrawCoordinates.isVisible():
             self.windowDrawCoordinates.hide()
 
         else:
             self.windowDrawCoordinates.show()
+
+    # Select image config file to read
+    def importPicSampleCoordinates(self, checked):
+        fileName, fileType = QFileDialog.getOpenFileName(self, 'Choose file', '', '*.jpg *.png *.tif *.jpeg')
+        if fileName:
+            shutil.copy(fileName, "images/ImgDrawCoordinates.jpg")
+            print("File copied successfully:",fileName)
+            self.windowDrawCoordinates = DrawCoordinates()
 
     @torch.no_grad()
     def model_load(self, weights="",  # model.pt path(s)
@@ -434,7 +442,9 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
 
         self.pushButton_upload_yolo.clicked.connect(self.open_model_yolo)
         self.buttonUpdateSettings.clicked.connect(self.yolo_configuration_settings)
+        self.buttonUploadFilePicSample.clicked.connect(self.importPicSampleCoordinates)
         self.buttonDrawCoordinates.clicked.connect(self.toggle_windowDrawCoordinates)
+        self.buttonShowObjCodesTable.clicked.connect(self.showObjCodesTable)
 
     '''
     ***Upload image***
@@ -514,7 +524,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 flag_err = True
                 pass
         else:
-            self.pointAx = 0
+            self.pointAx = 115
             # if len(PointA) < 1: PointA[0] = 0
         self.point_Ax.setText(str(self.pointAx))
 
@@ -529,7 +539,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 flag_err = True
                 pass
         else:
-            self.pointAy = 250
+            self.pointAy = 80
             # if len(PointA) < 2:PointA[1] = 250
         self.point_Ay.setText(str(self.pointAy))
 
@@ -544,7 +554,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 flag_err = True
                 pass
         else:
-            self.pointBx = 640
+            self.pointBx = 525
             # if len(PointB) < 1: PointB[0] = 640
         self.point_Bx.setText(str(self.pointBx))
         # Point By
@@ -558,7 +568,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                 flag_err = True
                 pass
         else:
-            self.pointBy = 250
+            self.pointBy = 635
             # if len(PointB) < 2: PointB[1] = 250
         self.point_By.setText(str(self.pointBy))
 
@@ -1055,7 +1065,7 @@ class MainWindows(QtWidgets.QWidget, Ui_Form):
                             id = output[4]
                             cls = output[5]
                             # count
-                            if count_obj(bboxes, w, h, id, BoxAx=self.pointAx, BoxAy=self.pointAy, BoxBx=self.pointBx, BoxBy=self.pointBy) and self.status_license_plate_recogniton:
+                            if count_obj(bboxes, w, h, id, classObj = int(cls), BoxAx=self.pointAx, BoxAy=self.pointAy, BoxBx=self.pointBx, BoxBy=self.pointBy) and self.status_license_plate_recogniton:
                             # count_obj(bboxes, w, h, id)
                             # if self.status_license_plate_recogniton:
                                 if os.stat("dataset_output\List_Result_License_Plate_Recognition.txt").st_size > 0:
